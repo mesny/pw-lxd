@@ -1,0 +1,21 @@
+[project]
+name = "mpi-tsp-ga"
+version = "0.1.0"
+description = "MPI island-model genetic algorithm for TSP on LXD cluster"
+requires-python = ">=3.11"
+dependencies = [
+    "mpi4py>=3.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.6.0",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = []
