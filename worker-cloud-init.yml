@@ -18,10 +18,10 @@ packages:
   - libopenmpi-dev
 
 runcmd:
-  - systemctl restart ssh || systemctl restart sshd
-  - mkdir -p /opt/pw-lxd
-  - git clone git@github.com:mesny/pw-lxd.git /opt/pw-lxd
-  - cd /opt/pw-lxd && git checkout main
-  - python3 -m venv /opt/pw-lxd/venv
-  - /opt/pw-lxd/venv/bin/pip install --upgrade pip
-  - test ! -f /opt/pw-lxd/requirements.txt || /opt/pw-lxd/venv/bin/pip install -r /opt/pw-lxd/requirements.txt
+  - |
+    set -eux
+    systemctl restart ssh || systemctl restart sshd
+    cd /opt/pw-lxd
+    git pull && git checkout main
+    .venv/bin/pip install --upgrade pip
+    .venv/bin/pip install -e .
