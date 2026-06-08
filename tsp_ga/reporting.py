@@ -10,6 +10,9 @@ from pathlib import Path
 from tsp_ga.models import AppConfig, GAConfig, IslandResult, MpiContext, PopulationPlan, Problem, RuntimeMetrics, Route
 
 
+BEST_ROUTE_VALUES_PER_LINE = 10
+
+
 def route_edges(route: Route) -> set[tuple[int, int]]:
     edges: set[tuple[int, int]] = set()
     n = len(route)
@@ -126,11 +129,51 @@ def build_result_document(
     }
 
 
+def compact_best_route_arrays(json_text: str, values_per_line: int = BEST_ROUTE_VALUES_PER_LINE) -> str:
+    lines = json_text.splitlines()
+    output_lines: list[str] = []
+    line_index = 0
+
+    while line_index < len(lines):
+        line = lines[line_index]
+
+        if line.strip() != '"best_route": [':
+            output_lines.append(line)
+            line_index += 1
+            continue
+
+        output_lines.append(line)
+        line_index += 1
+
+        value_lines: list[str] = []
+        while line_index < len(lines):
+            candidate = lines[line_index]
+            if candidate.strip() in {"]", "],"}:
+                break
+            value_lines.append(candidate)
+            line_index += 1
+
+        values = [value_line.strip().rstrip(",") for value_line in value_lines]
+        if values:
+            value_indent = value_lines[0][: len(value_lines[0]) - len(value_lines[0].lstrip())]
+            for chunk_start in range(0, len(values), values_per_line):
+                chunk = values[chunk_start:chunk_start + values_per_line]
+                suffix = "," if chunk_start + values_per_line < len(values) else ""
+                output_lines.append(f"{value_indent}{', '.join(chunk)}{suffix}")
+
+        if line_index < len(lines):
+            output_lines.append(lines[line_index])
+            line_index += 1
+
+    return "\n".join(output_lines)
+
+
 def write_result_document(output_path: str, result_document: dict) -> None:
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    json_text = json.dumps(result_document, indent=2, ensure_ascii=False)
     path.write_text(
-        json.dumps(result_document, indent=2, ensure_ascii=False),
+        compact_best_route_arrays(json_text),
         encoding="utf-8",
     )
 
