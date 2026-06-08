@@ -64,12 +64,12 @@ class ExperimentConfig:
     cities: int
     seed: int
     output: str
-    run_id: str
-    scenario_name: str
+    metadata_run_id: str
+    metadata_scenario_name: str
     metadata_containers_per_node: int | None
     metadata_hostfile: str | None
     metadata_cpu_limit: str | None
-    code_version: str | None
+    metadata_code_version: str | None
 
 
 @dataclass(slots=True)

@@ -74,12 +74,12 @@ def build_result_document(
 
     return {
         "metadata": {
-            "run_id": original_config.experiment.run_id,
-            "scenario_name": original_config.experiment.scenario_name,
+            "metadata_run_id": original_config.experiment.metadata_run_id,
+            "metadata_scenario_name": original_config.experiment.metadata_scenario_name,
             "metadata_containers_per_node": original_config.experiment.metadata_containers_per_node,
             "metadata_hostfile": original_config.experiment.metadata_hostfile,
             "metadata_cpu_limit": original_config.experiment.metadata_cpu_limit,
-            "code_version": original_config.experiment.code_version,
+            "metadata_code_version": original_config.experiment.metadata_code_version,
             "mpi_processes": mpi.size,
             "elapsed_seconds": runtime_metrics.total_seconds,
         },
@@ -145,7 +145,7 @@ def print_summary(result_document: dict, output_path: str) -> None:
 
     print(
         "DONE "
-        f"run_id={metadata['run_id']} "
+        f"run_id={metadata['metadata_run_id']} "
         f"mode=mpi "
         f"ranks={metadata['mpi_processes']} "
         f"cities={problem['cities']} "

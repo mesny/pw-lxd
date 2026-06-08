@@ -33,12 +33,12 @@ def build_config(args: argparse.Namespace) -> AppConfig:
             cities=args.cities,
             seed=args.seed,
             output=args.output,
-            run_id=args.run_id,
-            scenario_name=args.scenario_name,
+            metadata_run_id=args.metadata_run_id,
+            metadata_scenario_name=args.metadata_scenario_name,
             metadata_containers_per_node=args.metadata_containers_per_node,
             metadata_hostfile=args.metadata_hostfile,
             metadata_cpu_limit=args.metadata_cpu_limit,
-            code_version=args.code_version,
+            metadata_code_version=args.metadata_code_version,
         ),
     )
 
@@ -84,18 +84,18 @@ def resolve_ga_config_for_rank(config: GAConfig, population_plan: PopulationPlan
 def validate_experiment_config(config: ExperimentConfig) -> None:
     if config.cities < 3:
         raise ValueError("--cities must be >= 3")
-    if not config.run_id.strip():
-        raise ValueError("--run-id must not be empty")
-    if not config.scenario_name.strip():
-        raise ValueError("--scenario-name must not be empty")
+    if not config.metadata_run_id.strip():
+        raise ValueError("--metadata-run-id must not be empty")
+    if not config.metadata_scenario_name.strip():
+        raise ValueError("--metadata-scenario-name must not be empty")
     if config.metadata_containers_per_node is not None and config.metadata_containers_per_node < 1:
         raise ValueError("--metadata-containers-per-node must be >= 1 when provided")
     if config.metadata_cpu_limit is not None and not config.metadata_cpu_limit.strip():
         raise ValueError("--metadata-cpu-limit must not be empty when provided")
     if config.metadata_hostfile is not None and not config.metadata_hostfile.strip():
         raise ValueError("--metadata-hostfile must not be empty when provided")
-    if config.code_version is not None and not config.code_version.strip():
-        raise ValueError("--code-version must not be empty when provided")
+    if config.metadata_code_version is not None and not config.metadata_code_version.strip():
+        raise ValueError("--metadata-code-version must not be empty when provided")
     if not config.output.strip():
         raise ValueError("--output is required and must not be empty")
 

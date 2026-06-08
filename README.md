@@ -309,8 +309,8 @@ mpiexec -n 4 python3 main.py \
   --migration-strategy ring \
   --migration-interval 25 \
   --immigrants 2 \
-  --run-id mpi-local-004 \
-  --scenario-name local-4-ranks \
+  --metadata-run-id mpi-local-004 \
+  --metadata-scenario-name local-4-ranks \
   --output results/mpi-local-004.json
 ```
 
@@ -325,8 +325,8 @@ mpiexec -n 4 python3 main.py \
   --migration-strategy global-best \
   --migration-interval 50 \
   --immigrants 1 \
-  --run-id mpi-local-004-global-best \
-  --scenario-name local-4-ranks-global-best \
+  --metadata-run-id mpi-local-004-global-best \
+  --metadata-scenario-name local-4-ranks-global-best \
   --output results/mpi-local-004-global-best.json
 ```
 
@@ -345,9 +345,9 @@ mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
   --metadata-containers-per-node 2 \
   --metadata-hostfile hosts.lxd \
   --metadata-cpu-limit 1 \
-  --code-version manual-v1 \
-  --run-id lxd-3nodes-2containers-001 \
-  --scenario-name 3nodes-2containers-per-node \
+  --metadata-code-version manual-v1 \
+  --metadata-run-id lxd-3nodes-2containers-001 \
+  --metadata-scenario-name 3nodes-2containers-per-node \
   --output results/lxd-3nodes-2containers-001.json
 ```
 
@@ -366,9 +366,9 @@ mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
   --metadata-containers-per-node 2 \
   --metadata-hostfile hosts.lxd \
   --metadata-cpu-limit 1 \
-  --code-version manual-v1 \
-  --run-id lxd-3nodes-2containers-global-best-001 \
-  --scenario-name 3nodes-2containers-global-best \
+  --metadata-code-version manual-v1 \
+  --metadata-run-id lxd-3nodes-2containers-global-best-001 \
+  --metadata-scenario-name 3nodes-2containers-global-best \
   --output results/lxd-3nodes-2containers-global-best-001.json
 ```
 
@@ -391,10 +391,10 @@ mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
 | `--debug-routes` | Walidacja, czy trasy są poprawnymi permutacjami |
 | `--metadata-hostfile` | Metadane wyniku: hostfile MPI użyty przez `mpiexec --hostfile` |
 | `--metadata-cpu-limit` | Metadane wyniku: limit CPU ustawiony na kontenerach LXD |
-| `--code-version` | Wersja kodu/commit/tag zapisany jako metadane wyniku |
+| `--metadata-code-version` | Metadane wyniku: wersja kodu/commit/tag |
 | `--output` | Wymagana ścieżka zapisu wyniku JSON |
-| `--run-id` | Identyfikator uruchomienia eksperymentu |
-| `--scenario-name` | Nazwa scenariusza eksperymentalnego |
+| `--metadata-run-id` | Metadane wyniku: identyfikator uruchomienia eksperymentu |
+| `--metadata-scenario-name` | Metadane wyniku: nazwa scenariusza eksperymentalnego |
 | `--metadata-containers-per-node` | Metadane wyniku: liczba kontenerów LXD na fizyczny node |
 
 ## Miary do eksperymentów
