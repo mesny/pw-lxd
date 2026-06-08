@@ -1,5 +1,8 @@
 #cloud-config
 
+output:
+  all: '| tee -a /var/log/mpi-worker-init.log'
+
 ssh_deletekeys: true
 ssh_genkeytypes:
   - ed25519
