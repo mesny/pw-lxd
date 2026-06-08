@@ -335,7 +335,7 @@ mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
   --migration-interval 50 \
   --immigrants 4 \
   --two-opt-attempts 5 \
-  --containers-per-node 2 \
+  --metadata-containers-per-node 2 \
   --hostfile hosts.lxd \
   --cpu-limit 1 \
   --code-version manual-v1 \
@@ -356,7 +356,7 @@ mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
   --migration-interval 100 \
   --immigrants 1 \
   --two-opt-attempts 5 \
-  --containers-per-node 2 \
+  --metadata-containers-per-node 2 \
   --hostfile hosts.lxd \
   --cpu-limit 1 \
   --code-version manual-v1 \
@@ -388,14 +388,14 @@ mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
 | `--output` | Wymagana ścieżka zapisu wyniku JSON |
 | `--run-id` | Identyfikator uruchomienia eksperymentu |
 | `--scenario-name` | Nazwa scenariusza eksperymentalnego |
-| `--containers-per-node` | Liczba kontenerów LXD na fizyczny node |
+| `--metadata-containers-per-node` | Metadane wyniku: liczba kontenerów LXD na fizyczny node |
 
 ## Miary do eksperymentów
 
 Dla pomiaru przyspieszenia używaj `--population-mode total` i porównuj uruchomienia MPI z różną liczbą ranków:
 
 ```bash
-mpiexec --hostfile hosts.lxd -n 1 python3 main.py --migration-strategy none --immigrants 0 --population-mode total --population 1200 --cities 100 --generations 1000 --output results/t1.json
+mpiexec --hostfile hosts.lxd -n 1 python3 main.py --migration-strategy none --population-mode total --population 1200 --cities 100 --generations 1000 --output results/t1.json
 mpiexec --hostfile hosts.lxd -n 6 python3 main.py --population-mode total --population 1200 --cities 100 --generations 1000 --output results/t6.json
 ```
 

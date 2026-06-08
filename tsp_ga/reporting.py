@@ -76,7 +76,7 @@ def build_result_document(
         "metadata": {
             "run_id": original_config.experiment.run_id,
             "scenario_name": original_config.experiment.scenario_name,
-            "containers_per_node": original_config.experiment.containers_per_node,
+            "metadata_containers_per_node": original_config.experiment.metadata_containers_per_node,
             "hostfile": original_config.experiment.hostfile,
             "cpu_limit": original_config.experiment.cpu_limit,
             "code_version": original_config.experiment.code_version,

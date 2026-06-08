@@ -11,6 +11,8 @@ SUPPORTED_MIGRATION_STRATEGIES = {"none", "ring", "global-best"}
 
 
 def build_config(args: argparse.Namespace) -> AppConfig:
+    immigrants = 0 if args.migration_strategy == "none" else args.immigrants
+
     return AppConfig(
         ga=GAConfig(
             population=args.population,
@@ -19,7 +21,7 @@ def build_config(args: argparse.Namespace) -> AppConfig:
             elite=args.elite,
             tournament=args.tournament,
             migration_interval=args.migration_interval,
-            immigrants=args.immigrants,
+            immigrants=immigrants,
             two_opt_attempts=args.two_opt_attempts,
             report_interval=args.report_interval,
             debug_routes=args.debug_routes,
@@ -33,7 +35,7 @@ def build_config(args: argparse.Namespace) -> AppConfig:
             output=args.output,
             run_id=args.run_id,
             scenario_name=args.scenario_name,
-            containers_per_node=args.containers_per_node,
+            metadata_containers_per_node=args.metadata_containers_per_node,
             hostfile=args.hostfile,
             cpu_limit=args.cpu_limit,
             code_version=args.code_version,
@@ -86,8 +88,8 @@ def validate_experiment_config(config: ExperimentConfig) -> None:
         raise ValueError("--run-id must not be empty")
     if not config.scenario_name.strip():
         raise ValueError("--scenario-name must not be empty")
-    if config.containers_per_node is not None and config.containers_per_node < 1:
-        raise ValueError("--containers-per-node must be >= 1 when provided")
+    if config.metadata_containers_per_node is not None and config.metadata_containers_per_node < 1:
+        raise ValueError("--metadata-containers-per-node must be >= 1 when provided")
     if config.cpu_limit is not None and not config.cpu_limit.strip():
         raise ValueError("--cpu-limit must not be empty when provided")
     if config.hostfile is not None and not config.hostfile.strip():
@@ -121,8 +123,6 @@ def validate_ga_config(config: GAConfig) -> None:
         raise ValueError("--population-mode must be either 'per-rank' or 'total'")
     if config.migration_strategy not in SUPPORTED_MIGRATION_STRATEGIES:
         raise ValueError("--migration-strategy must be one of: 'none', 'ring', 'global-best'")
-    if config.migration_strategy == "none" and config.immigrants > 0:
-        raise ValueError("--immigrants must be 0 when --migration-strategy none")
 
 
 def validate_config(config: AppConfig) -> None:
