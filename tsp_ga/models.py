@@ -85,6 +85,7 @@ class RuntimeMetrics:
     gather_seconds: float = 0.0
     report_seconds: float = 0.0
     total_seconds: float = 0.0
+    total_seconds_max_rank: float = 0.0
 
 
 @dataclass(slots=True)

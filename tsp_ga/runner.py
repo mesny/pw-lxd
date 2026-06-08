@@ -123,6 +123,10 @@ def run_ga(config: AppConfig) -> dict | None:
     all_results_obj, metrics.gather_seconds = timer.measure(lambda: collect_results(local_result, mpi))
     all_results = all_results_obj
     metrics.total_seconds = monotonic_seconds(mpi) - total_start
+    if mpi.comm is None:
+        metrics.total_seconds_max_rank = metrics.total_seconds
+    else:
+        metrics.total_seconds_max_rank = mpi.comm.allreduce(metrics.total_seconds, op=MPI.MAX)
 
     if mpi.rank != 0:
         return None

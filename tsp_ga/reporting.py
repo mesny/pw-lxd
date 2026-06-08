@@ -74,6 +74,7 @@ def build_result_document(
 
     total_migration_time = sum(migration_times)
     total_migration_count = sum(migration_counts)
+    total_time_max_rank = runtime_metrics.total_seconds_max_rank
 
     return {
         "metadata": {
@@ -108,6 +109,7 @@ def build_result_document(
             "gather_seconds": runtime_metrics.gather_seconds,
             "report_seconds": runtime_metrics.report_seconds,
             "total_seconds": runtime_metrics.total_seconds,
+            "total_seconds_max_rank": total_time_max_rank,
             "migration_time_total_all_ranks": total_migration_time,
             "migration_count_total_all_ranks": total_migration_count,
             "migration_time_avg_per_migration": (
@@ -117,6 +119,8 @@ def build_result_document(
             "evolution_time_max_rank": max(evolution_times) if evolution_times else 0.0,
         },
         "summary": {
+            "total_best_route_distance": best.best_distance,
+            "total_time_seconds": total_time_max_rank,
             "best_rank": best.rank,
             "best_distance": best.best_distance,
             "best_route": best.best_route,
