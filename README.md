@@ -95,7 +95,7 @@ run_ga(config)
   -> resolve_ga_config_for_rank(config.ga, population_plan, mpi.rank)
   -> prepare_problem(experiment_config, mpi_context)
       rank 0:
-        -> load cities albo generate synthetic cities
+        -> wczytuje miasta z --input albo generuje losowe punkty 2D
       all ranks:
         -> comm.bcast(cities, root=0)
         -> build_distance_matrix(cities)
@@ -110,6 +110,13 @@ run_ga(config)
   -> rank 0 only:
       -> finalize_run(...)
 ```
+
+Wszystkie ranki rozwiązują tę samą instancję TSP. Lista miast jest przygotowywana tylko na ranku 0:
+
+- jeśli podano `--input`, miasta są wczytywane z pliku CSV,
+- jeśli nie podano `--input`, rank 0 generuje `--cities` losowych punktów 2D z użyciem `--seed`.
+
+Te punkty są traktowane jako miasta TSP. Następnie lista miast jest rozsyłana do wszystkich ranków przez `comm.bcast(cities, root=0)`. Każdy rank buduje lokalnie tę samą macierz odległości, ale używa innego ziarna RNG, więc startuje z inną populacją tras i przeszukuje inne obszary przestrzeni rozwiązań.
 
 ## Strategie migracji
 
