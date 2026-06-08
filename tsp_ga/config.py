@@ -36,8 +36,8 @@ def build_config(args: argparse.Namespace) -> AppConfig:
             run_id=args.run_id,
             scenario_name=args.scenario_name,
             metadata_containers_per_node=args.metadata_containers_per_node,
-            hostfile=args.hostfile,
-            cpu_limit=args.cpu_limit,
+            metadata_hostfile=args.metadata_hostfile,
+            metadata_cpu_limit=args.metadata_cpu_limit,
             code_version=args.code_version,
         ),
     )
@@ -90,10 +90,10 @@ def validate_experiment_config(config: ExperimentConfig) -> None:
         raise ValueError("--scenario-name must not be empty")
     if config.metadata_containers_per_node is not None and config.metadata_containers_per_node < 1:
         raise ValueError("--metadata-containers-per-node must be >= 1 when provided")
-    if config.cpu_limit is not None and not config.cpu_limit.strip():
-        raise ValueError("--cpu-limit must not be empty when provided")
-    if config.hostfile is not None and not config.hostfile.strip():
-        raise ValueError("--hostfile must not be empty when provided")
+    if config.metadata_cpu_limit is not None and not config.metadata_cpu_limit.strip():
+        raise ValueError("--metadata-cpu-limit must not be empty when provided")
+    if config.metadata_hostfile is not None and not config.metadata_hostfile.strip():
+        raise ValueError("--metadata-hostfile must not be empty when provided")
     if config.code_version is not None and not config.code_version.strip():
         raise ValueError("--code-version must not be empty when provided")
     if not config.output.strip():

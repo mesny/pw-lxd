@@ -67,8 +67,8 @@ class ExperimentConfig:
     run_id: str
     scenario_name: str
     metadata_containers_per_node: int | None
-    hostfile: str | None
-    cpu_limit: str | None
+    metadata_hostfile: str | None
+    metadata_cpu_limit: str | None
     code_version: str | None
 
 

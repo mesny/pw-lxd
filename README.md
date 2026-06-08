@@ -343,8 +343,8 @@ mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
   --immigrants 4 \
   --two-opt-attempts 5 \
   --metadata-containers-per-node 2 \
-  --hostfile hosts.lxd \
-  --cpu-limit 1 \
+  --metadata-hostfile hosts.lxd \
+  --metadata-cpu-limit 1 \
   --code-version manual-v1 \
   --run-id lxd-3nodes-2containers-001 \
   --scenario-name 3nodes-2containers-per-node \
@@ -364,8 +364,8 @@ mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
   --immigrants 1 \
   --two-opt-attempts 5 \
   --metadata-containers-per-node 2 \
-  --hostfile hosts.lxd \
-  --cpu-limit 1 \
+  --metadata-hostfile hosts.lxd \
+  --metadata-cpu-limit 1 \
   --code-version manual-v1 \
   --run-id lxd-3nodes-2containers-global-best-001 \
   --scenario-name 3nodes-2containers-global-best \
@@ -389,8 +389,8 @@ mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
 | `--immigrants` | Ilu najlepszych osobników migruje do kolejnej wyspy |
 | `--two-opt-attempts` | Liczba losowych prób lokalnego ulepszenia trasy |
 | `--debug-routes` | Walidacja, czy trasy są poprawnymi permutacjami |
-| `--hostfile` | Hostfile MPI zapisany jako metadane wyniku |
-| `--cpu-limit` | Limit CPU kontenera zapisany jako metadane wyniku |
+| `--metadata-hostfile` | Metadane wyniku: hostfile MPI użyty przez `mpiexec --hostfile` |
+| `--metadata-cpu-limit` | Metadane wyniku: limit CPU ustawiony na kontenerach LXD |
 | `--code-version` | Wersja kodu/commit/tag zapisany jako metadane wyniku |
 | `--output` | Wymagana ścieżka zapisu wyniku JSON |
 | `--run-id` | Identyfikator uruchomienia eksperymentu |
