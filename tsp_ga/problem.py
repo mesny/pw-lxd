@@ -11,11 +11,27 @@ def load_cities_from_csv(path: str) -> list[City]:
     cities: list[City] = []
     with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        for row in reader:
-            cities.append((float(row["x"]), float(row["y"])))
+        fieldnames = set(reader.fieldnames or [])
+        missing_columns = sorted({"x", "y"} - fieldnames)
+        if missing_columns:
+            raise ValueError(
+                f"CSV input {path!r} is missing required column(s): {', '.join(missing_columns)}"
+            )
+
+        for line_number, row in enumerate(reader, start=2):
+            try:
+                x = float(row["x"])
+                y = float(row["y"])
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"CSV input {path!r} has invalid numeric value at line {line_number}: "
+                    f"x={row['x']!r}, y={row['y']!r}"
+                ) from exc
+
+            cities.append((x, y))
 
     if len(cities) < 3:
-        raise ValueError("TSP wymaga co najmniej 3 miast.")
+        raise ValueError(f"CSV input {path!r} must contain at least 3 cities, got {len(cities)}.")
 
     return cities
 

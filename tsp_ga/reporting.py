@@ -233,9 +233,10 @@ def finalize_run(
         return result_document
 
     report_start = timer()
+    write_result_document(output_path, result_document)
+    print_summary(result_document, output_path)
     runtime_metrics.report_seconds = timer() - report_start
     result_document["timing"]["report_seconds"] = runtime_metrics.report_seconds
     write_result_document(output_path, result_document)
-    print_summary(result_document, output_path)
 
     return result_document
