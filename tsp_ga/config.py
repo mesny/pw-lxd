@@ -38,6 +38,7 @@ def build_config(args: argparse.Namespace) -> AppConfig:
             metadata_containers_per_node=args.metadata_containers_per_node,
             metadata_hostfile=args.metadata_hostfile,
             metadata_cpu_limit=args.metadata_cpu_limit,
+            metadata_memory_limit=args.metadata_memory_limit,
             metadata_code_version=args.metadata_code_version,
         ),
     )
@@ -92,6 +93,8 @@ def validate_experiment_config(config: ExperimentConfig) -> None:
         raise ValueError("--metadata-containers-per-node must be >= 1 when provided")
     if config.metadata_cpu_limit is not None and not config.metadata_cpu_limit.strip():
         raise ValueError("--metadata-cpu-limit must not be empty when provided")
+    if config.metadata_memory_limit is not None and not config.metadata_memory_limit.strip():
+        raise ValueError("--metadata-memory-limit must not be empty when provided")
     if config.metadata_hostfile is not None and not config.metadata_hostfile.strip():
         raise ValueError("--metadata-hostfile must not be empty when provided")
     if config.metadata_code_version is not None and not config.metadata_code_version.strip():

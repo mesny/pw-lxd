@@ -40,6 +40,7 @@ def parse_args() -> argparse.Namespace:
     metadata_group.add_argument("--metadata-containers-per-node", type=int, default=None, help="Metadata only: number of LXD containers per physical cluster node in this scenario")
     metadata_group.add_argument("--metadata-hostfile", type=str, default=None, help="Metadata only: MPI hostfile used for this run")
     metadata_group.add_argument("--metadata-cpu-limit", type=str, default=None, help="Metadata only: LXD CPU limit used per container")
+    metadata_group.add_argument("--metadata-memory-limit", type=str, default=None, help="Metadata only: LXD memory limit used per container")
     metadata_group.add_argument("--metadata-code-version", type=str, default=None, help="Metadata only: code version, git commit, tag or manual version label")
 
     debug_group = parser.add_argument_group("Debug")

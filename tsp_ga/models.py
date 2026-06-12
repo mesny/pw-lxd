@@ -69,6 +69,7 @@ class ExperimentConfig:
     metadata_containers_per_node: int | None
     metadata_hostfile: str | None
     metadata_cpu_limit: str | None
+    metadata_memory_limit: str | None
     metadata_code_version: str | None
 
 

@@ -83,6 +83,7 @@ def build_result_document(
             "metadata_containers_per_node": original_config.experiment.metadata_containers_per_node,
             "metadata_hostfile": original_config.experiment.metadata_hostfile,
             "metadata_cpu_limit": original_config.experiment.metadata_cpu_limit,
+            "metadata_memory_limit": original_config.experiment.metadata_memory_limit,
             "metadata_code_version": original_config.experiment.metadata_code_version,
             "mpi_processes": mpi.size,
             "elapsed_seconds": runtime_metrics.total_seconds,
