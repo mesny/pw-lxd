@@ -14,6 +14,7 @@ POPULATION="1200"
 GENERATIONS="1000"
 MUTATION="0.15"
 TWO_OPT_ATTEMPTS="5"
+MIGRATION_STRATEGY="all"
 CPU_LIMIT="1"
 MEMORY_LIMIT="4GiB"
 CODE_VERSION="manual-v1"
@@ -43,6 +44,7 @@ Options:
   --seeds csv           Seeds/repetitions. Default: 12345,22345,32345
   --population n        Total population budget. Default: 1200
   --generations n       Number of generations. Default: 1000
+  --migration-strategy  none, ring, global-best or all. Default: all
   --run-group-id id     Identifier shared by comparable runs. Default: generated UUIDv7
   --fetch               Fetch each result from rank-0 container after a run
   --mpi-iface name      Force OpenMPI TCP traffic over this interface
@@ -65,6 +67,7 @@ while [[ $# -gt 0 ]]; do
     --seeds) SEEDS="${2:?}"; shift 2 ;;
     --population) POPULATION="${2:?}"; shift 2 ;;
     --generations) GENERATIONS="${2:?}"; shift 2 ;;
+    --migration-strategy) MIGRATION_STRATEGY="${2:?}"; shift 2 ;;
     --run-group-id) RUN_GROUP_ID="${2:?}"; shift 2 ;;
     --fetch) FETCH=1; shift ;;
     --mpi-iface) MPI_IFACE="${2:?}"; shift 2 ;;
@@ -136,6 +139,14 @@ fi
 
 validate_positive_integer "--np" "$NP"
 validate_positive_integer "--population" "$POPULATION"
+
+case "$MIGRATION_STRATEGY" in
+  none|ring|global-best|all) ;;
+  *)
+    echo "Error: --migration-strategy must be one of: none, ring, global-best, all" >&2
+    exit 1
+    ;;
+esac
 
 min_total_population=$((NP * 4))
 if [[ "$POPULATION" -lt "$min_total_population" ]]; then
@@ -232,15 +243,34 @@ run_one() {
   fi
 }
 
+run_strategy_for_seed() {
+  local strategy="$1"
+  local seed="$2"
+
+  case "$strategy" in
+    none)
+      echo "Running migration experiment: strategy=none np=$NP seed=$seed" >&2
+      run_one "none" "50" "0" "$seed"
+      ;;
+    ring)
+      echo "Running migration experiment: strategy=ring np=$NP seed=$seed" >&2
+      run_one "ring" "50" "2" "$seed"
+      ;;
+    global-best)
+      echo "Running migration experiment: strategy=global-best np=$NP seed=$seed" >&2
+      run_one "global-best" "100" "1" "$seed"
+      ;;
+  esac
+}
+
 for seed in "${seed_values[@]}"; do
-  echo "Running migration experiment: strategy=none np=$NP seed=$seed" >&2
-  run_one "none" "50" "0" "$seed"
-
-  echo "Running migration experiment: strategy=ring np=$NP seed=$seed" >&2
-  run_one "ring" "50" "2" "$seed"
-
-  echo "Running migration experiment: strategy=global-best np=$NP seed=$seed" >&2
-  run_one "global-best" "100" "1" "$seed"
+  if [[ "$MIGRATION_STRATEGY" == "all" ]]; then
+    run_strategy_for_seed "none" "$seed"
+    run_strategy_for_seed "ring" "$seed"
+    run_strategy_for_seed "global-best" "$seed"
+  else
+    run_strategy_for_seed "$MIGRATION_STRATEGY" "$seed"
+  fi
 done
 
 if [[ "$DRY_RUN" -ne 1 ]]; then
