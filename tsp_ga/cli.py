@@ -36,6 +36,7 @@ def parse_args() -> argparse.Namespace:
 
     metadata_group = parser.add_argument_group("Metadata")
     metadata_group.add_argument("--metadata-run-id", type=str, default="manual-run", help="Metadata only: experiment run identifier")
+    metadata_group.add_argument("--metadata-run-group-id", type=str, default=None, help="Metadata only: identifier shared by comparable experiment runs")
     metadata_group.add_argument("--metadata-scenario-name", type=str, default="default", help="Metadata only: human-readable experiment scenario name")
     metadata_group.add_argument("--metadata-containers-per-node", type=int, default=None, help="Metadata only: number of LXD containers per physical cluster node in this scenario")
     metadata_group.add_argument("--metadata-hostfile", type=str, default=None, help="Metadata only: MPI hostfile used for this run")

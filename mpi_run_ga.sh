@@ -8,7 +8,10 @@ PYTHON=".venv/bin/python3"
 MAIN="main.py"
 RESULT_DIR=""
 LABEL=""
+OUTPUT_NAME_MODE="timestamp"
 DRY_RUN=0
+TIMEOUT_SECONDS=""
+MPI_IFACE=""
 
 usage() {
   cat >&2 <<'EOF'
@@ -23,6 +26,9 @@ Wrapper options:
   --main path           Application entrypoint relative to --wdir or absolute. Default: main.py
   --result-dir path     Directory for result file inside --wdir. Default: --wdir directly
   --label text          Extra filename label
+  --output-name-mode m  Result filename mode: timestamp or descriptive. Default: timestamp
+  --mpi-iface name      Force OpenMPI TCP traffic over this interface
+  --timeout seconds     Stop mpirun after this many seconds. Default: no timeout
   --dry-run             Print generated filename and command, but do not run MPI
   -h, --help            Show this help
 
@@ -40,6 +46,16 @@ slugify() {
 
 count_hostfile_entries() {
   awk 'NF && $1 !~ /^#/ {count++} END {print count + 0}' "$1"
+}
+
+validate_positive_integer() {
+  local name="$1"
+  local value="$2"
+
+  if [[ ! "$value" =~ ^[0-9]+$ || "$value" -lt 1 ]]; then
+    echo "Error: $name must be a positive integer: $value" >&2
+    exit 1
+  fi
 }
 
 arg_value() {
@@ -113,6 +129,18 @@ while [[ $# -gt 0 ]]; do
       LABEL="${2:?Error: --label requires a value}"
       shift 2
       ;;
+    --output-name-mode)
+      OUTPUT_NAME_MODE="${2:?Error: --output-name-mode requires a value}"
+      shift 2
+      ;;
+    --mpi-iface)
+      MPI_IFACE="${2:?Error: --mpi-iface requires a value}"
+      shift 2
+      ;;
+    --timeout)
+      TIMEOUT_SECONDS="${2:?Error: --timeout requires a value}"
+      shift 2
+      ;;
     --dry-run)
       DRY_RUN=1
       shift
@@ -168,6 +196,17 @@ cities="$(arg_value --cities "${APP_ARGS[@]}")"
 population="$(arg_value --population "${APP_ARGS[@]}")"
 generations="$(arg_value --generations "${APP_ARGS[@]}")"
 migration="$(arg_value --migration-strategy "${APP_ARGS[@]}")"
+population_mode="$(arg_value --population-mode "${APP_ARGS[@]}")"
+
+if [[ "$population_mode" == "total" && -n "$population" ]]; then
+  validate_positive_integer "--population" "$population"
+  min_total_population=$((NP * 4))
+  if [[ "$population" -lt "$min_total_population" ]]; then
+    echo "Error: --population is too small before MPI start: population=$population, mpi_processes=$NP, minimum_total=$min_total_population." >&2
+    echo "Use --population $min_total_population or reduce --np/hostfile size." >&2
+    exit 1
+  fi
+fi
 
 name_parts=()
 add_name_part "$LABEL"
@@ -180,11 +219,22 @@ add_labeled_name_part "g" "$generations"
 add_name_part "$migration"
 add_name_part "$timestamp"
 
-if [[ ${#name_parts[@]} -eq 0 ]]; then
-  result_file="mpi-ga-${timestamp}.json"
-else
-  result_file="$(IFS=-; printf '%s' "${name_parts[*]}").json"
-fi
+case "$OUTPUT_NAME_MODE" in
+  timestamp)
+    result_file="${timestamp}.json"
+    ;;
+  descriptive)
+    if [[ ${#name_parts[@]} -eq 0 ]]; then
+      result_file="mpi-ga-${timestamp}.json"
+    else
+      result_file="$(IFS=-; printf '%s' "${name_parts[*]}").json"
+    fi
+    ;;
+  *)
+    echo "Error: --output-name-mode must be 'timestamp' or 'descriptive': $OUTPUT_NAME_MODE" >&2
+    exit 1
+    ;;
+esac
 
 if [[ -n "$RESULT_DIR" ]]; then
   output_path="${RESULT_DIR%/}/$result_file"
@@ -195,6 +245,16 @@ fi
 cmd=(
   mpirun
   --mca orte_keep_fqdn_hostnames 1
+)
+
+if [[ -n "$MPI_IFACE" ]]; then
+  cmd+=(
+    --mca oob_tcp_if_include "$MPI_IFACE"
+    --mca btl_tcp_if_include "$MPI_IFACE"
+  )
+fi
+
+cmd+=(
   --hostfile "$HOSTFILE"
   -np "$NP"
   --wdir "$WORKDIR"
@@ -213,5 +273,13 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   exit 0
 fi
 
-"${cmd[@]}" >&2
+printf 'Running command:' >&2
+printf ' %q' "${cmd[@]}" >&2
+printf '\n' >&2
+
+if [[ -n "$TIMEOUT_SECONDS" ]]; then
+  timeout "$TIMEOUT_SECONDS" "${cmd[@]}" >&2
+else
+  "${cmd[@]}" >&2
+fi
 printf '%s\n' "$result_file"

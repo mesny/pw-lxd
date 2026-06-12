@@ -37,6 +37,7 @@ def run_island(
 
     pop = initial_population(ga_config.population, len(problem.cities), problem.distances, rng)
     best_seen = best_individual(pop)
+    best_generation = 0
     history: History = []
     migration_count = 0
     migration_time_seconds = 0.0
@@ -82,6 +83,7 @@ def run_island(
         current_best = best_individual(pop)
         if current_best.distance < best_seen.distance:
             best_seen = current_best
+            best_generation = generation
 
         if generation % ga_config.report_interval == 0 or generation == ga_config.generations:
             history.append((generation, best_seen.distance))
@@ -89,6 +91,7 @@ def run_island(
     return IslandResult(
         rank=mpi.rank,
         best_distance=best_seen.distance,
+        best_generation=best_generation,
         best_route=best_seen.route,
         history=history,
         migration_count=migration_count,

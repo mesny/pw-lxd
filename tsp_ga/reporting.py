@@ -4,13 +4,10 @@ import itertools
 import json
 import statistics
 from collections.abc import Callable
-from dataclasses import asdict
+from hashlib import sha256
 from pathlib import Path
 
 from tsp_ga.models import AppConfig, GAConfig, IslandResult, MpiContext, PopulationPlan, Problem, RuntimeMetrics, Route
-
-
-BEST_ROUTE_VALUES_PER_LINE = 10
 
 
 def route_edges(route: Route) -> set[tuple[int, int]]:
@@ -57,6 +54,39 @@ def build_diversity_document(all_results: list[IslandResult]) -> dict:
     }
 
 
+def route_fingerprint(route: Route) -> str:
+    route_json = json.dumps(route, separators=(",", ":"))
+    return sha256(route_json.encode("utf-8")).hexdigest()[:16]
+
+
+def build_best_route_info(best: IslandResult) -> dict:
+    return {
+        "rank": best.rank,
+        "distance": best.best_distance,
+        "found_generation": best.best_generation,
+        "city_count": len(best.best_route),
+        "edge_count": len(best.best_route),
+        "route_fingerprint": route_fingerprint(best.best_route),
+        "full_route_saved": False,
+    }
+
+
+def build_progress_history(history: list[tuple[int, float]]) -> list[dict]:
+    return [
+        {
+            "generation": generation,
+            "best_distance_so_far": best_distance,
+        }
+        for generation, best_distance in history
+    ]
+
+
+def safe_divide(numerator: float, denominator: float) -> float | None:
+    if denominator == 0:
+        return None
+    return numerator / denominator
+
+
 def build_result_document(
     original_config: AppConfig,
     effective_ga_config: GAConfig,
@@ -75,133 +105,147 @@ def build_result_document(
     total_migration_time = sum(migration_times)
     total_migration_count = sum(migration_counts)
     total_time_max_rank = runtime_metrics.total_seconds_max_rank
+    sorted_results = sorted(all_results, key=lambda r: r.rank)
+    diversity = build_diversity_document(all_results)
+    reference_islands = 3
+    t_p = total_time_max_rank
+    t_ref = t_p if mpi.size == reference_islands else None
+    relative_speedup = safe_divide(t_ref, t_p) if t_ref is not None else None
+    relative_efficiency = (
+        safe_divide(relative_speedup, mpi.size / reference_islands)
+        if relative_speedup is not None
+        else None
+    )
+    migration_overhead_ratio = safe_divide(total_migration_time, t_p)
+    improvement_vs_none_percent = 0.0 if effective_ga_config.migration_strategy == "none" else None
 
     return {
-        "metadata": {
-            "metadata_run_id": original_config.experiment.metadata_run_id,
-            "metadata_scenario_name": original_config.experiment.metadata_scenario_name,
-            "metadata_containers_per_node": original_config.experiment.metadata_containers_per_node,
-            "metadata_hostfile": original_config.experiment.metadata_hostfile,
-            "metadata_cpu_limit": original_config.experiment.metadata_cpu_limit,
-            "metadata_memory_limit": original_config.experiment.metadata_memory_limit,
-            "metadata_code_version": original_config.experiment.metadata_code_version,
-            "mpi_processes": mpi.size,
-            "elapsed_seconds": runtime_metrics.total_seconds,
+        "run": {
+            "run_id": original_config.experiment.metadata_run_id,
+            "run_group_id": original_config.experiment.metadata_run_group_id,
+            "scenario_name": original_config.experiment.metadata_scenario_name,
+            "hostfile": original_config.experiment.metadata_hostfile,
+            "code_version": original_config.experiment.metadata_code_version,
         },
-        "problem": {
+        "params": {
             "input": original_config.experiment.input,
             "cities": len(problem.cities),
             "seed": original_config.experiment.seed,
-        },
-        "ga_config_requested": asdict(original_config.ga),
-        "ga_config_effective_rank0": asdict(effective_ga_config),
-        "work_budget": {
-            "population_mode": population_plan.population_mode,
-            "requested_population": population_plan.requested_population,
-            "per_rank_populations": population_plan.per_rank_populations,
-            "effective_population_rank0": effective_ga_config.population,
-            "effective_total_population": population_plan.effective_total_population,
+            "islands": mpi.size,
             "generations": effective_ga_config.generations,
+            "population_mode": population_plan.population_mode,
+            "population_total": population_plan.effective_total_population,
+            "population_per_island": population_plan.per_rank_populations,
+            "mutation": effective_ga_config.mutation,
+            "elite": effective_ga_config.elite,
+            "tournament": effective_ga_config.tournament,
+            "two_opt_attempts": effective_ga_config.two_opt_attempts,
             "migration_strategy": effective_ga_config.migration_strategy,
+            "migration_interval": effective_ga_config.migration_interval,
+            "immigrants": effective_ga_config.immigrants,
+            "cpu_limit": original_config.experiment.metadata_cpu_limit,
+            "memory_limit": original_config.experiment.metadata_memory_limit,
         },
-        "timing": {
-            "prepare_problem_seconds": runtime_metrics.prepare_problem_seconds,
-            "run_island_seconds": runtime_metrics.run_island_seconds,
-            "gather_seconds": runtime_metrics.gather_seconds,
-            "report_seconds": runtime_metrics.report_seconds,
-            "total_seconds": runtime_metrics.total_seconds,
-            "total_seconds_max_rank": total_time_max_rank,
-            "migration_time_total_all_ranks": total_migration_time,
-            "migration_count_total_all_ranks": total_migration_count,
-            "migration_time_avg_per_migration": (
-                total_migration_time / total_migration_count if total_migration_count > 0 else 0.0
-            ),
-            "migration_time_max_rank": max(migration_times) if migration_times else 0.0,
-            "evolution_time_max_rank": max(evolution_times) if evolution_times else 0.0,
+        "metrics": {
+            "quality_measures": {
+                "formulas": {
+                    "best_route_distance": "min(best_distance_rank_i)",
+                    "mean_island_distance": "avg(best_distance_rank_i)",
+                    "distance_spread": "max(best_distance_rank_i) - min(best_distance_rank_i)",
+                    "improvement_vs_none_percent": "100 * (D_none - D_strategy) / D_none",
+                    "edge_distance": "1 - common_edges(route_a, route_b) / edge_count",
+                },
+                "best_distance": best.best_distance,
+                "best_rank": best.rank,
+                "best_generation": best.best_generation,
+                "mean_island_distance": statistics.mean(distances),
+                "min_island_distance": min(distances),
+                "max_island_distance": max(distances),
+                "distance_spread": max(distances) - min(distances),
+                "improvement_vs_none_percent": improvement_vs_none_percent,
+                "improvement_vs_none_note": (
+                    "This run uses migration-strategy none, so it is the baseline."
+                    if effective_ga_config.migration_strategy == "none"
+                    else "Requires a matching baseline run with migration-strategy none."
+                ),
+                "diversity": diversity,
+                "best_route": build_best_route_info(best),
+            },
+            "performance_measures": {
+                "formulas": {
+                    "total_time": "T(p)",
+                    "relative_speedup": "S_ref(p) = T_ref / T(p)",
+                    "relative_efficiency": "E_ref(p) = S_ref(p) / (p / 3)",
+                    "migration_overhead_ratio": "M = migration_seconds_total / T(p)",
+                },
+                "p_ranks": mpi.size,
+                "reference_ranks": reference_islands,
+                "total_time_seconds_T_p": t_p,
+                "reference_time_seconds_T_ref": t_ref,
+                "relative_speedup_S_ref": relative_speedup,
+                "relative_efficiency_E_ref": relative_efficiency,
+                "migration_overhead_ratio": migration_overhead_ratio,
+                "elapsed_seconds": runtime_metrics.total_seconds,
+                "prepare_problem_seconds": runtime_metrics.prepare_problem_seconds,
+                "run_island_seconds": runtime_metrics.run_island_seconds,
+                "gather_seconds": runtime_metrics.gather_seconds,
+                "report_seconds": runtime_metrics.report_seconds,
+                "evolution_max_rank_seconds": max(evolution_times) if evolution_times else 0.0,
+                "migration_total_seconds": total_migration_time,
+                "migration_count_total": total_migration_count,
+                "migration_avg_seconds": safe_divide(total_migration_time, total_migration_count) or 0.0,
+                "migration_max_rank_seconds": max(migration_times) if migration_times else 0.0,
+                "scaling_note": (
+                    "This run is the reference for S_ref and E_ref."
+                    if mpi.size == reference_islands
+                    else "S_ref and E_ref require T_ref from a matching hosts-1-per-node run."
+                ),
+            },
         },
-        "summary": {
-            "total_best_route_distance": best.best_distance,
-            "total_time_seconds": total_time_max_rank,
-            "best_rank": best.rank,
-            "best_distance": best.best_distance,
-            "best_route": best.best_route,
-            "min_distance": min(distances),
-            "mean_distance": statistics.mean(distances),
-            "max_distance": max(distances),
+        "islands": [
+            {
+                "rank": result.rank,
+                "best_distance": result.best_distance,
+                "best_generation": result.best_generation,
+                "evolution_time_seconds": result.evolution_time_seconds,
+                "migration_time_seconds": result.migration_time_seconds,
+                "migration_count": result.migration_count,
+                "progress": build_progress_history(result.history),
+            }
+            for result in sorted_results
+        ],
+        "notes": {
+            "full_routes_saved": False,
+            "progress": "Best distance so far at report checkpoints.",
         },
-        "diversity": build_diversity_document(all_results),
-        "islands": [asdict(result) for result in sorted(all_results, key=lambda r: r.rank)],
     }
-
-
-def compact_best_route_arrays(json_text: str, values_per_line: int = BEST_ROUTE_VALUES_PER_LINE) -> str:
-    lines = json_text.splitlines()
-    output_lines: list[str] = []
-    line_index = 0
-
-    while line_index < len(lines):
-        line = lines[line_index]
-
-        if line.strip() != '"best_route": [':
-            output_lines.append(line)
-            line_index += 1
-            continue
-
-        output_lines.append(line)
-        line_index += 1
-
-        value_lines: list[str] = []
-        while line_index < len(lines):
-            candidate = lines[line_index]
-            if candidate.strip() in {"]", "],"}:
-                break
-            value_lines.append(candidate)
-            line_index += 1
-
-        values = [value_line.strip().rstrip(",") for value_line in value_lines]
-        if values:
-            value_indent = value_lines[0][: len(value_lines[0]) - len(value_lines[0].lstrip())]
-            for chunk_start in range(0, len(values), values_per_line):
-                chunk = values[chunk_start:chunk_start + values_per_line]
-                suffix = "," if chunk_start + values_per_line < len(values) else ""
-                output_lines.append(f"{value_indent}{', '.join(chunk)}{suffix}")
-
-        if line_index < len(lines):
-            output_lines.append(lines[line_index])
-            line_index += 1
-
-    return "\n".join(output_lines)
 
 
 def write_result_document(output_path: str, result_document: dict) -> None:
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     json_text = json.dumps(result_document, indent=2, ensure_ascii=False)
-    path.write_text(
-        compact_best_route_arrays(json_text),
-        encoding="utf-8",
-    )
+    path.write_text(json_text, encoding="utf-8")
 
 
 def print_summary(result_document: dict, output_path: str) -> None:
-    metadata = result_document["metadata"]
-    problem = result_document["problem"]
-    work_budget = result_document["work_budget"]
-    timing = result_document["timing"]
-    summary = result_document["summary"]
-    diversity = result_document["diversity"]
+    run = result_document["run"]
+    params = result_document["params"]
+    quality = result_document["metrics"]["quality_measures"]
+    performance = result_document["metrics"]["performance_measures"]
+    diversity = quality["diversity"]
 
     print(
         "DONE "
-        f"run_id={metadata['metadata_run_id']} "
+        f"run_id={run['run_id']} "
         f"mode=mpi "
-        f"ranks={metadata['mpi_processes']} "
-        f"cities={problem['cities']} "
-        f"population_total={work_budget['effective_total_population']} "
-        f"best_distance={summary['best_distance']:.6f} "
+        f"ranks={params['islands']} "
+        f"cities={params['cities']} "
+        f"population_total={params['population_total']} "
+        f"best_distance={quality['best_distance']:.6f} "
         f"edge_diversity_mean={diversity['mean_pairwise_edge_distance']:.6f} "
-        f"elapsed_seconds={metadata['elapsed_seconds']:.6f} "
-        f"migration_seconds={timing['migration_time_total_all_ranks']:.6f} "
+        f"elapsed_seconds={performance['elapsed_seconds']:.6f} "
+        f"migration_seconds={performance['migration_total_seconds']:.6f} "
         f"output={output_path}"
     )
 
@@ -237,7 +281,7 @@ def finalize_run(
     write_result_document(output_path, result_document)
     print_summary(result_document, output_path)
     runtime_metrics.report_seconds = timer() - report_start
-    result_document["timing"]["report_seconds"] = runtime_metrics.report_seconds
+    result_document["metrics"]["performance_measures"]["report_seconds"] = runtime_metrics.report_seconds
     write_result_document(output_path, result_document)
 
     return result_document

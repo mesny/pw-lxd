@@ -28,6 +28,7 @@ class Problem:
 class IslandResult:
     rank: int
     best_distance: float
+    best_generation: int
     best_route: Route
     history: History
     migration_count: int
@@ -65,6 +66,7 @@ class ExperimentConfig:
     seed: int
     output: str
     metadata_run_id: str
+    metadata_run_group_id: str | None
     metadata_scenario_name: str
     metadata_containers_per_node: int | None
     metadata_hostfile: str | None

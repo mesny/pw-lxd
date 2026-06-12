@@ -34,6 +34,7 @@ def build_config(args: argparse.Namespace) -> AppConfig:
             seed=args.seed,
             output=args.output,
             metadata_run_id=args.metadata_run_id,
+            metadata_run_group_id=args.metadata_run_group_id,
             metadata_scenario_name=args.metadata_scenario_name,
             metadata_containers_per_node=args.metadata_containers_per_node,
             metadata_hostfile=args.metadata_hostfile,
@@ -87,6 +88,8 @@ def validate_experiment_config(config: ExperimentConfig) -> None:
         raise ValueError("--cities must be >= 3")
     if not config.metadata_run_id.strip():
         raise ValueError("--metadata-run-id must not be empty")
+    if config.metadata_run_group_id is not None and not config.metadata_run_group_id.strip():
+        raise ValueError("--metadata-run-group-id must not be empty when provided")
     if not config.metadata_scenario_name.strip():
         raise ValueError("--metadata-scenario-name must not be empty")
     if config.metadata_containers_per_node is not None and config.metadata_containers_per_node < 1:
