@@ -31,10 +31,15 @@ Przy modelu `1 kontener = 1 rank MPI` uruchamiany jest wariant:
 4 GB RAM na kontener
 ```
 
-Pełny wariant eksperymentu używa więc `-n 12`. Do pomiaru skalowania warto porównywać podzbiory ranków:
+Pełny wariant eksperymentu używa więc 12 ranków z pliku `hosts-4-per-node.lxd`.
+Do pomiaru skalowania porównywane są jawne pliki hostów, dzięki czemu wiadomo,
+na których nodach uruchamiane są kontenery:
 
 ```text
-np = 1, 2, 3, 4, 6, 8, 12
+hosts-1-per-node.lxd  -> 3 ranki,  po 1 kontenerze na node
+hosts-2-per-node.lxd  -> 6 ranków, po 2 kontenery na node
+hosts-4-per-node.lxd  -> 12 ranków, po 4 kontenery na node
+hosts-8-per-node.lxd  -> 24 ranki, po 8 kontenerów na node (wariant rozszerzony)
 ```
 
 ## Kluczowe założenie eksperymentalne
@@ -56,7 +61,13 @@ rank 0..11: 100 osobników
 
 Do badania jakości modelu wyspowego można używać `per-rank`, bo wraz z liczbą wysp rośnie całkowity budżet obliczeń.
 
-Do badania przyspieszenia `S(n,p) = T(n,1) / T(n,p)` bardziej uczciwy jest tryb `total`, ponieważ całkowity budżet populacji pozostaje zbliżony między `p=1` i `p>1`.
+Do badania przyspieszenia bardziej uczciwy jest tryb `total`, ponieważ całkowity budżet populacji pozostaje zbliżony między wariantami. W eksperymencie opartym o pliki `hosts-*` przyspieszenie liczone jest względem najmniejszego równomiernego wariantu `hosts-1-per-node.lxd`:
+
+```text
+S_ref(p) = T_ref / T(p)
+T_ref = czas dla hosts-1-per-node.lxd
+E_ref(p) = S_ref(p) / (p / 3)
+```
 
 ## Struktura projektu
 
@@ -322,6 +333,35 @@ python3 -m pip install --break-system-packages mpi4py
 
 Docelowo lepiej używać `venv` i `pip install -e .`, bo wtedy importy modułów `tsp_ga.*` są przewidywalne.
 
+### Limity zasobów LXD
+
+Limity `1 vCPU` i `4GiB RAM` należy ustawić w konfiguracji LXD, najlepiej na profilu `mpi-worker`, którego używają kontenery MPI. Plik `lxd_profile_mpi_worker.yaml` zawiera dane cloud-init dla kontenerów i sam z siebie nie nakłada limitów CPU/RAM.
+
+Rekomendowany sposób:
+
+```bash
+./lxd_apply_mpi_worker_limits.sh
+```
+
+Równoważne komendy LXD:
+
+```bash
+lxc profile set mpi-worker limits.cpu 1
+lxc profile set mpi-worker limits.memory 4GiB
+```
+
+Weryfikacja profilu:
+
+```bash
+lxc profile show mpi-worker
+```
+
+Weryfikacja konkretnego kontenera:
+
+```bash
+lxc config show <container-name> --expanded
+```
+
 ## Test lokalny z MPI
 
 ```bash
@@ -411,11 +451,11 @@ mpiexec --hostfile hosts.lxd -n 12 .venv/bin/python main.py \
 Rekomendowane skrypty eksperymentalne dla tego układu:
 
 ```bash
-./mpi_experiment_scaling.sh --hostfile ./hosts.lxd --fetch
-./mpi_experiment_migration.sh --hostfile ./hosts.lxd --fetch
+./mpi_experiment_scaling.sh --fetch
+./mpi_experiment_migration.sh --hostfile ./hosts-4-per-node.lxd --fetch
 ```
 
-Pierwszy skrypt testuje domyślnie `np=1,2,3,4,6,8,12`. Drugi porównuje strategie migracji przy pełnym układzie `np=12`.
+Pierwszy skrypt testuje domyślnie pliki `hosts-1-per-node.lxd`, `hosts-2-per-node.lxd` i `hosts-4-per-node.lxd`. Liczba ranków jest liczona z liczby wpisów w wybranym pliku hostów. Drugi skrypt porównuje strategie migracji przy pełnym układzie `np=12`.
 
 ## Parametry CLI
 
@@ -445,17 +485,16 @@ Pierwszy skrypt testuje domyślnie `np=1,2,3,4,6,8,12`. Drugi porównuje strateg
 
 ## Miary do eksperymentów
 
-Dla pomiaru przyspieszenia używaj `--population-mode total` i porównuj uruchomienia MPI z różną liczbą ranków:
+Dla pomiaru przyspieszenia używaj `--population-mode total` i porównuj uruchomienia MPI z różnymi plikami hostów:
 
 ```bash
-mpiexec --hostfile hosts.lxd -n 1 .venv/bin/python main.py --migration-strategy none --population-mode total --population 1200 --cities 100 --generations 1000 --output results/t1.json
-mpiexec --hostfile hosts.lxd -n 12 .venv/bin/python main.py --population-mode total --population 1200 --cities 100 --generations 1000 --output results/t12.json
+./mpi_experiment_scaling.sh --hostfiles ./hosts-1-per-node.lxd,./hosts-2-per-node.lxd,./hosts-4-per-node.lxd --fetch
 ```
 
 Następnie:
 
 ```text
-S(n,12) = elapsed_seconds z t1.json / elapsed_seconds z t12.json
+S_ref(p) = elapsed_seconds dla hosts-1-per-node.lxd / elapsed_seconds dla badanego hostfile
 ```
 
 ## Uwagi projektowe
