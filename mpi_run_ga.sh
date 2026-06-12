@@ -189,8 +189,9 @@ if [[ -z "$NP" ]]; then
   fi
 fi
 
-timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+timestamp="$(date -u +%Y%m%dT%H%M%S%3NZ)"
 run_id="$(arg_value --metadata-run-id "${APP_ARGS[@]}")"
+run_group_id="$(arg_value --metadata-run-group-id "${APP_ARGS[@]}")"
 scenario="$(arg_value --metadata-scenario-name "${APP_ARGS[@]}")"
 cities="$(arg_value --cities "${APP_ARGS[@]}")"
 population="$(arg_value --population "${APP_ARGS[@]}")"
@@ -221,7 +222,11 @@ add_name_part "$timestamp"
 
 case "$OUTPUT_NAME_MODE" in
   timestamp)
-    result_file="${timestamp}.json"
+    if [[ -n "$run_group_id" ]]; then
+      result_file="${timestamp}_${run_group_id}.json"
+    else
+      result_file="${timestamp}.json"
+    fi
     ;;
   descriptive)
     if [[ ${#name_parts[@]} -eq 0 ]]; then

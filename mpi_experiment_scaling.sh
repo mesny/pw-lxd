@@ -261,4 +261,5 @@ done
 
 if [[ "$DRY_RUN" -ne 1 ]]; then
   echo "Summary: $summary_file"
+  echo "Run group: $RUN_GROUP_ID"
 fi
