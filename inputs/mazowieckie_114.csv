@@ -1,0 +1,115 @@
+id,name,x,y,simc,prng,kind,gmina,powiat
+1,Białobrzegi,421.693,635.147,0973286,4784,miasto,Białobrzegi-gmina miejsko-wiejska,białobrzeski
+2,Bieżuń,566.386,559.662,0111981,5974,miasto,Bieżuń-gmina miejsko-wiejska,żuromiński
+3,Bodzanów,515.404,570.077,0560213,7520,miasto,Bodzanów-gmina miejsko-wiejska,płocki
+4,Brok,540.798,693.022,0966151,168371,miasto,Brok-gmina miejsko-wiejska,ostrowski
+5,Brwinów,476.506,617.456,0920284,10658,miasto,Brwinów-gmina miejsko-wiejska,pruszkowski
+6,Błonie,482.229,610.546,0920249,6664,miasto,Błonie-gmina miejsko-wiejska,warszawski zachodni
+7,Cegłów,479.187,687.415,0668956,14616,miasto,Cegłów-gmina miejsko-wiejska,miński
+8,Chorzele,601.122,626.500,0966270,16299,miasto,Chorzele-gmina miejsko-wiejska,przasnyski
+9,Ciechanów,558.628,608.276,0930414,17260,miasto,Ciechanów-gmina miejska,ciechanowski
+10,Ciepielów,378.896,679.662,0617203,17531,miasto,Ciepielów-gmina miejsko-wiejska,lipski
+11,Czerwińsk nad Wisłą,503.912,589.300,0561885,20349,miasto,Czerwińsk nad Wisłą-gmina miejsko-wiejska,płoński
+12,Dobre,498.365,682.506,0670278,24695,miasto,Dobre-gmina miejsko-wiejska,miński
+13,Drobin,541.855,566.730,0563223,26266,miasto,Drobin-gmina miejsko-wiejska,płocki
+14,Garwolin,451.106,679.859,0975285,31802,miasto,Garwolin-gmina miejska,garwoliński
+15,Gielniów,393.604,602.670,0618817,32457,miasto,Gielniów-gmina miejsko-wiejska,przysuski
+16,Glinojeck,551.201,586.990,0114620,33165,miasto,Glinojeck-gmina miejsko-wiejska,ciechanowski
+17,Gostynin,507.136,531.398,0968977,35323,miasto,Gostynin-gmina miejska,gostyniński
+18,Grodzisk Mazowiecki,472.079,611.327,0920380,38842,miasto,Grodzisk Mazowiecki-gmina miejsko-wiejska,grodziski
+19,Grójec,446.002,628.487,0973352,39404,miasto,Grójec-gmina miejsko-wiejska,grójecki
+20,Góra Kalwaria,459.595,652.134,0920321,35763,miasto,Góra Kalwaria-gmina miejsko-wiejska,piaseczyński
+21,Gąbin,503.927,549.844,0968871,32029,miasto,Gąbin-gmina miejsko-wiejska,płocki
+22,Głowaczów,419.957,660.391,0619366,33763,miasto,Głowaczów-gmina miejsko-wiejska,kozienicki
+23,Halinów,486.864,661.126,0002766,40667,miasto,Halinów-gmina miejsko-wiejska,miński
+24,Iłża,368.701,656.360,0973375,42467,miasto,Iłża-gmina miejsko-wiejska,radomski
+25,Jadów,515.745,678.685,0673220,43070,miasto,Jadów-gmina miejsko-wiejska,wołomiński
+26,Jastrząb,377.293,635.901,0623988,45118,miasto,Jastrząb-gmina miejsko-wiejska,szydłowiecki
+27,Jedlnia-Letnisko,398.644,662.013,0625444,45952,miasto,Jedlnia-Letnisko-gmina miejsko-wiejska,radomski
+28,Józefów,477.466,652.562,0920404,47350,miasto,Józefów-gmina miejska,otwocki
+29,Karczew,470.122,654.171,0920500,50414,miasto,Karczew-gmina miejsko-wiejska,otwocki
+30,Kazanów,381.555,672.090,0625728,51554,miasto,Kazanów-gmina miejsko-wiejska,zwoleński
+31,Kałuszyn,486.261,692.151,0975380,48829,miasto,Kałuszyn-gmina miejsko-wiejska,miński
+32,Kobyłka,499.311,649.558,0920539,55222,miasto,Kobyłka-gmina miejska,wołomiński
+33,Konstancin-Jeziorna,471.870,645.019,0920634,57292,miasto,Konstancin-Jeziorna-gmina miejsko-wiejska,piaseczyński
+34,Kosów Lacki,529.999,713.073,0676128,59040,miasto,Kosów Lacki-gmina miejsko-wiejska,sokołowski
+35,Kozienice,416.157,676.546,0973524,60561,miasto,Kozienice-gmina miejsko-wiejska,kozienicki
+36,Latowicz,465.929,692.594,0677636,66812,miasto,Latowicz-gmina miejsko-wiejska,miński
+37,Legionowo,506.301,631.375,0920806,66945,miasto,Legionowo-gmina miejska,legionowski
+38,Lipsko,369.059,685.244,0973613,69181,miasto,Lipsko-gmina miejsko-wiejska,lipski
+39,Lubowidz,584.275,556.300,0118606,70463,miasto,Lubowidz-gmina miejsko-wiejska,żuromiński
+40,Maciejowice,428.144,676.432,0680503,75054,miasto,Maciejowice-gmina miejsko-wiejska,garwoliński
+41,Magnuszew,435.514,664.405,0628833,75316,miasto,Magnuszew-gmina miejsko-wiejska,kozienicki
+42,Maków Mazowiecki,557.558,641.365,0966300,75867,miasto,Maków Mazowiecki-gmina miejska,makowski
+43,Marki,498.590,644.008,0920901,77801,miasto,Marki-gmina miejska,wołomiński
+44,Małkinia Górna,540.716,704.488,0514408,76880,miasto,Małkinia Górna-gmina miejsko-wiejska,ostrowski
+45,Milanówek,474.504,614.239,0921020,80526,miasto,Milanówek-gmina miejska,grodziski
+46,Mińsk Mazowiecki,482.361,675.804,0975687,80914,miasto,Mińsk Mazowiecki-gmina miejska,miński
+47,Mogielnica,426.643,618.944,0973665,82526,miasto,Mogielnica-gmina miejsko-wiejska,grójecki
+48,Mordy,488.633,740.200,0975747,83112,miasto,Mordy-gmina miejsko-wiejska,siedlecki
+49,Mrozy,481.423,691.611,0682940,83982,miasto,Mrozy-gmina miejsko-wiejska,miński
+50,Mszczonów,457.540,603.863,0977054,84092,miasto,Mszczonów-gmina miejsko-wiejska,żyrardowski
+51,Myszyniec,615.389,656.237,0514928,84551,miasto,Myszyniec-gmina miejsko-wiejska,ostrołęcki
+52,Mława,583.889,592.591,0930696,81255,miasto,Mława-gmina miejska,mławski
+53,Nasielsk,526.460,622.215,0930740,86045,miasto,Nasielsk-gmina miejsko-wiejska,nowodworski
+54,Nowe Miasto,533.553,610.213,0120900,88958,miasto,Nowe Miasto-gmina miejsko-wiejska,płoński
+55,Nowe Miasto nad Pilicą,417.967,609.128,0973725,88970,miasto,Nowe Miasto nad Pilicą-gmina miejsko-wiejska,grójecki
+56,Nowy Dwór Mazowiecki,508.541,616.643,0921148,89971,miasto,Nowy Dwór Mazowiecki-gmina miejska,nowodworski
+57,Odrzywół,406.992,607.922,0630110,91302,miasto,Odrzywół-gmina miejsko-wiejska,przysuski
+58,Osieck,458.351,666.306,0683192,93949,miasto,Osieck-gmina miejsko-wiejska,otwocki
+59,Ostrołęka,582.646,672.181,0966079,95023,miasto,Ostrołęka-gmina miejska,Ostrołęka
+60,Ostrów Mazowiecka,552.468,695.091,0966330,95387,miasto,Ostrów Mazowiecka-gmina miejska,ostrowski
+61,Otwock,473.822,655.055,0921237,95886,miasto,Otwock-gmina miejska,otwocki
+62,Ożarów Mazowiecki,484.227,622.539,0921415,96076,miasto,Ożarów Mazowiecki-gmina miejsko-wiejska,warszawski zachodni
+63,Piaseczno,469.660,638.869,0921438,99220,miasto,Piaseczno-gmina miejsko-wiejska,piaseczyński
+64,Piastów,481.414,625.752,0921496,99816,miasto,Piastów-gmina miejska,pruszkowski
+65,Pilawa,457.757,674.000,0975753,101101,miasto,Pilawa-gmina miejsko-wiejska,garwoliński
+66,Pionki,403.866,670.092,0973748,101339,miasto,Pionki-gmina miejska,radomski
+67,Podkowa Leśna,474.389,618.059,0921504,104903,miasto,Podkowa Leśna-gmina miejska,grodziski
+68,Pruszków,478.907,623.314,0921510,110472,miasto,Pruszków-gmina miejska,pruszkowski
+69,Przasnysz,574.253,626.388,0966398,110515,miasto,Przasnysz-gmina miejska,przasnyski
+70,Przysucha,389.262,613.363,0973777,112388,miasto,Przysucha-gmina miejsko-wiejska,przysuski
+71,Przytyk,401.934,632.225,0634348,112456,miasto,Przytyk-gmina miejsko-wiejska,radomski
+72,Pułtusk,539.632,640.976,0930816,113024,miasto,Pułtusk-gmina miejsko-wiejska,pułtuski
+73,Płock,520.280,546.548,0968687,102452,miasto,Płock-gmina miejska,Płock
+74,Płońsk,529.392,592.718,0930800,102544,miasto,Płońsk-gmina miejska,płoński
+75,Raciąż,546.671,575.467,0930839,113663,miasto,Raciąż-gmina miejska,płoński
+76,Radom,394.880,650.051,0972750,113958,miasto,Radom-gmina miejska,Radom
+77,Radzymin,508.057,648.289,0921591,114356,miasto,Radzymin-gmina miejsko-wiejska,wołomiński
+78,Różan,561.029,661.177,0966412,117457,miasto,Różan-gmina miejsko-wiejska,makowski
+79,Sanniki,496.559,558.722,0574511,120725,miasto,Sanniki-gmina miejsko-wiejska,gostyniński
+80,Serock,518.353,640.392,0921645,121316,miasto,Serock-gmina miejsko-wiejska,legionowski
+81,Siedlce,482.610,724.776,0975173,121807,miasto,Siedlce-gmina miejska,Siedlce
+82,Siennica,472.706,679.433,0687273,122312,miasto,Siennica-gmina miejsko-wiejska,miński
+83,Sienno,360.485,673.181,0636650,122343,miasto,Sienno-gmina miejsko-wiejska,lipski
+84,Sierpc,554.733,545.019,0969310,122489,miasto,Sierpc-gmina miejska,sierpecki
+85,Skaryszew,385.070,656.933,0973820,123426,miasto,Skaryszew-gmina miejsko-wiejska,radomski
+86,Sochaczew,485.530,584.552,0977120,126099,miasto,Sochaczew-gmina miejska,sochaczewski
+87,Sochocin,536.754,599.482,0125954,126100,miasto,Sochocin-gmina miejsko-wiejska,płoński
+88,Sokołów Podlaski,509.653,721.060,0975760,126324,miasto,Sokołów Podlaski-gmina miejska,sokołowski
+89,Solec nad Wisłą,366.762,693.387,0637921,126428,miasto,Solec nad Wisłą-gmina miejsko-wiejska,lipski
+90,Stanisławów,494.714,673.748,0690186,127879,miasto,Stanisławów-gmina miejsko-wiejska,miński
+91,Staroźreby,530.064,566.874,0577060,129626,miasto,Staroźreby-gmina miejsko-wiejska,płocki
+92,Sulejówek,488.631,656.343,0921668,133405,miasto,Sulejówek-gmina miejska,miński
+93,Szydłowiec,374.711,629.684,0973895,136374,miasto,Szydłowiec-gmina miejsko-wiejska,szydłowiecki
+94,Tarczyn,458.764,625.979,0009478,138799,miasto,Tarczyn-gmina miejsko-wiejska,piaseczyński
+95,Tłuszcz,509.896,665.509,0966441,139609,miasto,Tłuszcz-gmina miejsko-wiejska,wołomiński
+96,Warka,437.871,650.542,0973978,144236,miasto,Warka-gmina miejsko-wiejska,grójecki
+97,Warszawa,486.770,637.350,0918123,144333,miasto,Warszawa-gmina miejska,Warszawa
+98,Wiskitki,469.876,594.725,0739656,148545,miasto,Wiskitki-gmina miejsko-wiejska,żyrardowski
+99,Wołomin,500.554,653.190,0921792,150707,miasto,Wołomin-gmina miejsko-wiejska,wołomiński
+100,Wyszków,528.395,666.014,0966470,153841,miasto,Wyszków-gmina miejsko-wiejska,wyszkowski
+101,Wyszogród,503.333,581.007,0969356,153859,miasto,Wyszogród-gmina miejsko-wiejska,płocki
+102,Wyśmierzyce,419.144,625.829,0974044,153900,miasto,Wyśmierzyce-gmina miejsko-wiejska,białobrzeski
+103,Węgrów,507.947,705.211,0975871,145355,miasto,Węgrów-gmina miejska,węgrowski
+104,Zakroczym,508.711,609.510,0921869,157068,miasto,Zakroczym-gmina miejsko-wiejska,nowodworski
+105,Zielonka,495.585,646.780,0921970,161397,miasto,Zielonka-gmina miejska,wołomiński
+106,Zwoleń,390.824,680.120,0974096,162632,miasto,Zwoleń-gmina miejsko-wiejska,zwoleński
+107,Ząbki,493.593,644.412,0921958,160232,miasto,Ząbki-gmina miejska,wołomiński
+108,Łaskarzew,439.082,678.742,0975434,71427,miasto,Łaskarzew-gmina miejska,garwoliński
+109,Łochów,521.447,682.096,0975492,73032,miasto,Łochów-gmina miejsko-wiejska,węgrowski
+110,Łomianki,498.080,628.528,0920864,73122,miasto,Łomianki-gmina miejsko-wiejska,warszawski zachodni
+111,Łosice,489.281,753.902,0922120,73344,miasto,Łosice-gmina miejsko-wiejska,łosicki
+112,Żelechów,441.976,699.604,0975983,163599,miasto,Żelechów-gmina miejsko-wiejska,garwoliński
+113,Żuromin,578.213,560.942,0930851,164350,miasto,Żuromin-gmina miejsko-wiejska,żuromiński
+114,Żyrardów,466.546,599.173,0977210,164568,miasto,Żyrardów-gmina miejska,żyrardowski
