@@ -12,6 +12,31 @@ Projekt jest przygotowany pod uruchamianie w klastrze LXD, gdzie:
 
 LXD dostarcza izolowane środowiska wykonawcze, natomiast podział pracy, komunikacja i migracja osobników są realizowane przez MPI.
 
+## Założenie infrastrukturalne
+
+Docelowy eksperyment zakłada klaster z 3 nodami LXD. Na każdym nodzie na eksperymenty przeznaczane są:
+
+```text
+4 vCPU
+16 GB RAM
+```
+
+Przy modelu `1 kontener = 1 rank MPI` uruchamiany jest wariant:
+
+```text
+4 kontenery LXD na node
+12 kontenerów LXD łącznie
+12 ranków MPI
+1 vCPU na kontener
+4 GB RAM na kontener
+```
+
+Pełny wariant eksperymentu używa więc `-n 12`. Do pomiaru skalowania warto porównywać podzbiory ranków:
+
+```text
+np = 1, 2, 3, 4, 6, 8, 12
+```
+
 ## Kluczowe założenie eksperymentalne
 
 Program rozróżnia dwa tryby interpretacji populacji:
@@ -24,10 +49,9 @@ Program rozróżnia dwa tryby interpretacji populacji:
 W trybie `total` populacja jest dzielona z obsługą reszty, np.:
 
 ```text
-population=1000, ranks=6
-rank 0..3: 167 osobników
-rank 4..5: 166 osobników
-łącznie: 1000 osobników
+population=1200, ranks=12
+rank 0..11: 100 osobników
+łącznie: 1200 osobników
 ```
 
 Do badania jakości modelu wyspowego można używać `per-rank`, bo wraz z liczbą wysp rośnie całkowity budżet obliczeń.
@@ -189,7 +213,7 @@ Program zawsze zapisuje pełny wynik do pliku JSON wskazanego przez wymagany par
 Na stdout wypisywana jest tylko jedna krótka linia podsumowania, np.:
 
 ```text
-DONE run_id=lxd-3nodes-2containers-001 mode=mpi ranks=6 cities=100 population_total=1200 best_distance=1234.567890 edge_diversity_mean=0.420000 elapsed_seconds=12.345678 migration_seconds=0.123456 output=results/lxd-3nodes-2containers-001.json
+DONE run_id=lxd-3nodes-4containers-001 mode=mpi ranks=12 cities=100 population_total=1200 best_distance=1234.567890 edge_diversity_mean=0.420000 elapsed_seconds=12.345678 migration_seconds=0.123456 output=results/lxd-3nodes-4containers-001.json
 ```
 
 ## Metryki dywersyfikacji
@@ -268,7 +292,7 @@ pip install -e ".[dev]"
 Uruchomienie z katalogu projektu:
 
 ```bash
-python3 main.py --help
+.venv/bin/python main.py --help
 ```
 
 Alternatywnie, bez instalacji jako pakiet, trzeba uruchamiać program z katalogu głównego projektu, tak aby Python widział katalog `tsp_ga/` na `PYTHONPATH`.
@@ -301,7 +325,7 @@ Docelowo lepiej używać `venv` i `pip install -e .`, bo wtedy importy modułów
 ## Test lokalny z MPI
 
 ```bash
-mpiexec -n 4 python3 main.py \
+mpiexec -n 4 .venv/bin/python main.py \
   --cities 50 \
   --population-mode total \
   --population 400 \
@@ -317,7 +341,7 @@ mpiexec -n 4 python3 main.py \
 Przykład z migracją `global-best`:
 
 ```bash
-mpiexec -n 4 python3 main.py \
+mpiexec -n 4 .venv/bin/python main.py \
   --cities 50 \
   --population-mode total \
   --population 400 \
@@ -332,29 +356,40 @@ mpiexec -n 4 python3 main.py \
 
 ## Uruchomienie na klastrze LXD
 
+Zakładany układ klastra:
+
+```text
+3 nody LXD
+4 kontenery systemowe LXD na każdym nodzie
+12 kontenerów / ranków MPI łącznie
+limits.cpu=1 na kontener
+limits.memory=4GiB na kontener
+```
+
 ```bash
-mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
+mpiexec --hostfile hosts.lxd -n 12 .venv/bin/python main.py \
   --cities 100 \
   --population-mode total \
   --population 1200 \
   --generations 1000 \
   --migration-strategy ring \
   --migration-interval 50 \
-  --immigrants 4 \
+  --immigrants 2 \
   --two-opt-attempts 5 \
-  --metadata-containers-per-node 2 \
+  --metadata-containers-per-node 4 \
   --metadata-hostfile hosts.lxd \
   --metadata-cpu-limit 1 \
+  --metadata-memory-limit 4GiB \
   --metadata-code-version manual-v1 \
-  --metadata-run-id lxd-3nodes-2containers-001 \
-  --metadata-scenario-name 3nodes-2containers-per-node \
-  --output results/lxd-3nodes-2containers-001.json
+  --metadata-run-id lxd-3nodes-4containers-001 \
+  --metadata-scenario-name 3nodes-4containers-per-node \
+  --output results/lxd-3nodes-4containers-001.json
 ```
 
 Wariant `global-best` na klastrze LXD:
 
 ```bash
-mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
+mpiexec --hostfile hosts.lxd -n 12 .venv/bin/python main.py \
   --cities 100 \
   --population-mode total \
   --population 1200 \
@@ -363,14 +398,24 @@ mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
   --migration-interval 100 \
   --immigrants 1 \
   --two-opt-attempts 5 \
-  --metadata-containers-per-node 2 \
+  --metadata-containers-per-node 4 \
   --metadata-hostfile hosts.lxd \
   --metadata-cpu-limit 1 \
+  --metadata-memory-limit 4GiB \
   --metadata-code-version manual-v1 \
-  --metadata-run-id lxd-3nodes-2containers-global-best-001 \
-  --metadata-scenario-name 3nodes-2containers-global-best \
-  --output results/lxd-3nodes-2containers-global-best-001.json
+  --metadata-run-id lxd-3nodes-4containers-global-best-001 \
+  --metadata-scenario-name 3nodes-4containers-global-best \
+  --output results/lxd-3nodes-4containers-global-best-001.json
 ```
+
+Rekomendowane skrypty eksperymentalne dla tego układu:
+
+```bash
+./mpi_experiment_scaling.sh --hostfile ./hosts.lxd --fetch
+./mpi_experiment_migration.sh --hostfile ./hosts.lxd --fetch
+```
+
+Pierwszy skrypt testuje domyślnie `np=1,2,3,4,6,8,12`. Drugi porównuje strategie migracji przy pełnym układzie `np=12`.
 
 ## Parametry CLI
 
@@ -391,6 +436,7 @@ mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
 | `--debug-routes` | Walidacja, czy trasy są poprawnymi permutacjami |
 | `--metadata-hostfile` | Metadane wyniku: hostfile MPI użyty przez `mpiexec --hostfile` |
 | `--metadata-cpu-limit` | Metadane wyniku: limit CPU ustawiony na kontenerach LXD |
+| `--metadata-memory-limit` | Metadane wyniku: limit pamięci ustawiony na kontenerach LXD |
 | `--metadata-code-version` | Metadane wyniku: wersja kodu/commit/tag |
 | `--output` | Wymagana ścieżka zapisu wyniku JSON |
 | `--metadata-run-id` | Metadane wyniku: identyfikator uruchomienia eksperymentu |
@@ -402,14 +448,14 @@ mpiexec --hostfile hosts.lxd -n 6 python3 main.py \
 Dla pomiaru przyspieszenia używaj `--population-mode total` i porównuj uruchomienia MPI z różną liczbą ranków:
 
 ```bash
-mpiexec --hostfile hosts.lxd -n 1 python3 main.py --migration-strategy none --population-mode total --population 1200 --cities 100 --generations 1000 --output results/t1.json
-mpiexec --hostfile hosts.lxd -n 6 python3 main.py --population-mode total --population 1200 --cities 100 --generations 1000 --output results/t6.json
+mpiexec --hostfile hosts.lxd -n 1 .venv/bin/python main.py --migration-strategy none --population-mode total --population 1200 --cities 100 --generations 1000 --output results/t1.json
+mpiexec --hostfile hosts.lxd -n 12 .venv/bin/python main.py --population-mode total --population 1200 --cities 100 --generations 1000 --output results/t12.json
 ```
 
 Następnie:
 
 ```text
-S(n,6) = elapsed_seconds z t1.json / elapsed_seconds z t6.json
+S(n,12) = elapsed_seconds z t1.json / elapsed_seconds z t12.json
 ```
 
 ## Uwagi projektowe
