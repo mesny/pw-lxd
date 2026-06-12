@@ -7,6 +7,8 @@ from tsp_ga.runner import run_ga
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for the MPI TSP experiment."""
+
     parser = argparse.ArgumentParser(
         description="MPI island-model genetic algorithm for TSP."
     )
@@ -51,6 +53,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Build configuration from CLI arguments and start the run."""
+
     args = parse_args()
     config = build_config(args)
     validate_config(config)

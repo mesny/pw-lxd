@@ -15,10 +15,14 @@ from tsp_ga.operators import (
 
 
 def best_individual(pop: list[Individual]) -> Individual:
+    """Return the shortest-route individual from a population."""
+
     return min(pop, key=lambda ind: ind.distance)
 
 
 def select_elite(pop: list[Individual], elite_count: int) -> list[Individual]:
+    """Copy the best individuals unchanged into the next generation."""
+
     return heapq.nsmallest(elite_count, pop, key=lambda ind: ind.distance)
 
 
@@ -28,6 +32,8 @@ def evolve_one_generation(
     config: GAConfig,
     rng: random.Random,
 ) -> list[Individual]:
+    """Advance one island population by one genetic algorithm generation."""
+
     pop_size = len(pop)
     n = len(dist)
     new_pop = select_elite(pop, config.elite)

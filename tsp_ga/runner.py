@@ -17,10 +17,14 @@ from tsp_ga.timing import StageTimer
 
 
 def build_rank_seed(base_seed: int, rank: int) -> int:
+    """Derive a stable, distinct random seed for each MPI rank."""
+
     return base_seed + rank * 100_003
 
 
 def monotonic_seconds(mpi: MpiContext) -> float:
+    """Use MPI time when available, otherwise use the local monotonic clock."""
+
     if mpi.comm is None:
         return time.perf_counter()
     return MPI.Wtime()
@@ -33,6 +37,8 @@ def run_island(
     mpi: MpiContext,
     timer: StageTimer,
 ) -> IslandResult:
+    """Run the genetic algorithm loop for a single MPI island."""
+
     rng = random.Random(rng_seed)
 
     pop = initial_population(ga_config.population, len(problem.cities), problem.distances, rng)
@@ -59,6 +65,7 @@ def run_island(
         pop = pop_obj
         evolution_time_seconds += elapsed
 
+        # Migration is scheduled after full local generations so all ranks exchange comparable elites.
         if generation % ga_config.migration_interval == 0:
             pop_obj, migration_elapsed = timer.measure(
                 lambda: migrate_population(
@@ -101,6 +108,8 @@ def run_island(
 
 
 def run_ga(config: AppConfig) -> dict | None:
+    """Run the full MPI experiment and return the report document on rank 0."""
+
     mpi = get_mpi_context()
     timer = StageTimer(lambda: monotonic_seconds(mpi))
     population_plan = build_population_plan(config.ga, mpi.size)
@@ -129,6 +138,7 @@ def run_ga(config: AppConfig) -> dict | None:
     if mpi.comm is None:
         metrics.total_seconds_max_rank = metrics.total_seconds
     else:
+        # The slowest rank determines the wall-clock cost of a synchronized MPI run.
         metrics.total_seconds_max_rank = mpi.comm.allreduce(metrics.total_seconds, op=MPI.MAX)
 
     if mpi.rank != 0:

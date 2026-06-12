@@ -8,6 +8,8 @@ from tsp_ga.models import City, DistanceMatrix, ExperimentConfig, MpiContext, Pr
 
 
 def load_cities_from_csv(path: str) -> list[City]:
+    """Load city coordinates from a CSV file with x and y columns."""
+
     cities: list[City] = []
     with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -37,17 +39,23 @@ def load_cities_from_csv(path: str) -> list[City]:
 
 
 def generate_random_cities(n: int, seed: int) -> list[City]:
+    """Generate a deterministic random TSP instance."""
+
     rng = random.Random(seed)
     return [(rng.uniform(0, 1000), rng.uniform(0, 1000)) for _ in range(n)]
 
 
 def prepare_cities(config: ExperimentConfig) -> list[City]:
+    """Load configured city data or generate it when no input file is set."""
+
     if config.input:
         return load_cities_from_csv(config.input)
     return generate_random_cities(config.cities, config.seed)
 
 
 def build_distance_matrix(cities: list[City]) -> DistanceMatrix:
+    """Build a symmetric Euclidean distance matrix for all city pairs."""
+
     n = len(cities)
     matrix = [[0.0] * n for _ in range(n)]
 
@@ -63,11 +71,14 @@ def build_distance_matrix(cities: list[City]) -> DistanceMatrix:
 
 
 def prepare_problem(config: ExperimentConfig, mpi: MpiContext) -> Problem:
+    """Prepare and broadcast the TSP problem for the current MPI rank."""
+
     if mpi.rank == 0:
         cities = prepare_cities(config)
     else:
         cities = None
 
+    # Rank 0 is the single source of input data; all ranks build the same distance matrix locally.
     if mpi.comm is not None:
         cities = mpi.comm.bcast(cities, root=0)
 

@@ -11,6 +11,8 @@ SUPPORTED_MIGRATION_STRATEGIES = {"none", "ring", "global-best"}
 
 
 def build_config(args: argparse.Namespace) -> AppConfig:
+    """Translate parsed CLI arguments into application configuration."""
+
     immigrants = 0 if args.migration_strategy == "none" else args.immigrants
 
     return AppConfig(
@@ -46,6 +48,8 @@ def build_config(args: argparse.Namespace) -> AppConfig:
 
 
 def build_population_plan(config: GAConfig, world_size: int) -> PopulationPlan:
+    """Resolve per-rank population sizes for the selected population mode."""
+
     if world_size < 1:
         raise ValueError("world_size must be >= 1")
 
@@ -59,6 +63,7 @@ def build_population_plan(config: GAConfig, world_size: int) -> PopulationPlan:
     base_population = config.population // world_size
     remainder = config.population % world_size
 
+    # Keep the requested total population exact, even when it is not divisible by the rank count.
     per_rank_populations = [
         base_population + (1 if rank < remainder else 0)
         for rank in range(world_size)
@@ -80,10 +85,14 @@ def build_population_plan(config: GAConfig, world_size: int) -> PopulationPlan:
 
 
 def resolve_ga_config_for_rank(config: GAConfig, population_plan: PopulationPlan, rank: int) -> GAConfig:
+    """Return a GA config with the population size assigned to this rank."""
+
     return replace(config, population=population_plan.per_rank_populations[rank])
 
 
 def validate_experiment_config(config: ExperimentConfig) -> None:
+    """Validate input, output and metadata fields for an experiment."""
+
     if config.cities < 3:
         raise ValueError("--cities must be >= 3")
     if not config.metadata_run_id.strip():
@@ -107,6 +116,8 @@ def validate_experiment_config(config: ExperimentConfig) -> None:
 
 
 def validate_ga_config(config: GAConfig) -> None:
+    """Validate genetic algorithm and migration parameters."""
+
     if config.population < 4:
         raise ValueError("--population must be >= 4")
     if config.generations < 1:
@@ -132,5 +143,7 @@ def validate_ga_config(config: GAConfig) -> None:
 
 
 def validate_config(config: AppConfig) -> None:
+    """Validate all configuration sections before running the experiment."""
+
     validate_experiment_config(config.experiment)
     validate_ga_config(config.ga)

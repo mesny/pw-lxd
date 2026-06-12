@@ -14,18 +14,24 @@ MigrationStrategy = str
 
 @dataclass(slots=True)
 class Individual:
+    """Single TSP candidate route with its cached distance."""
+
     route: Route
     distance: float
 
 
 @dataclass(slots=True)
 class Problem:
+    """Prepared TSP instance shared by all ranks."""
+
     cities: list[City]
     distances: DistanceMatrix
 
 
 @dataclass(slots=True)
 class IslandResult:
+    """Final local result produced by one island/rank."""
+
     rank: int
     best_distance: float
     best_generation: int
@@ -38,6 +44,8 @@ class IslandResult:
 
 @dataclass(slots=True)
 class MpiContext:
+    """Small wrapper around the active MPI communicator."""
+
     comm: Any | None
     rank: int
     size: int
@@ -45,6 +53,8 @@ class MpiContext:
 
 @dataclass(slots=True)
 class GAConfig:
+    """Genetic algorithm parameters after CLI parsing and validation."""
+
     population: int
     generations: int
     mutation: float
@@ -61,6 +71,8 @@ class GAConfig:
 
 @dataclass(slots=True)
 class ExperimentConfig:
+    """Input, output and metadata describing a single experiment run."""
+
     input: str | None
     cities: int
     seed: int
@@ -77,12 +89,16 @@ class ExperimentConfig:
 
 @dataclass(slots=True)
 class AppConfig:
+    """Top-level configuration passed into the runner."""
+
     ga: GAConfig
     experiment: ExperimentConfig
 
 
 @dataclass(slots=True)
 class RuntimeMetrics:
+    """Measured wall-clock timings for the major run stages."""
+
     prepare_problem_seconds: float = 0.0
     run_island_seconds: float = 0.0
     gather_seconds: float = 0.0
@@ -93,10 +109,14 @@ class RuntimeMetrics:
 
 @dataclass(slots=True)
 class PopulationPlan:
+    """Resolved population split across MPI ranks."""
+
     requested_population: int
     population_mode: PopulationMode
     per_rank_populations: list[int] = field(default_factory=list)
 
     @property
     def effective_total_population(self) -> int:
+        """Return the actual total population used by all ranks."""
+
         return sum(self.per_rank_populations)

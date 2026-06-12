@@ -11,6 +11,8 @@ from tsp_ga.models import AppConfig, GAConfig, IslandResult, MpiContext, Populat
 
 
 def route_edges(route: Route) -> set[tuple[int, int]]:
+    """Return undirected edges used by a closed TSP route."""
+
     edges: set[tuple[int, int]] = set()
     n = len(route)
 
@@ -23,6 +25,8 @@ def route_edges(route: Route) -> set[tuple[int, int]]:
 
 
 def edge_distance(route_a: Route, route_b: Route) -> float:
+    """Compute pairwise edge diversity between two routes."""
+
     edges_a = route_edges(route_a)
     edges_b = route_edges(route_b)
 
@@ -32,10 +36,13 @@ def edge_distance(route_a: Route, route_b: Route) -> float:
     common_edges = len(edges_a & edges_b)
     total_edges = max(len(edges_a), len(edges_b))
 
+    # This treats reversed routes as equivalent because route_edges stores undirected edges.
     return 1.0 - (common_edges / total_edges)
 
 
 def build_diversity_document(all_results: list[IslandResult]) -> dict:
+    """Aggregate route diversity metrics across island results."""
+
     sorted_results = sorted(all_results, key=lambda r: r.rank)
     best_routes = [result.best_route for result in sorted_results]
     canonical_routes = {tuple(route) for route in best_routes}
@@ -55,11 +62,15 @@ def build_diversity_document(all_results: list[IslandResult]) -> dict:
 
 
 def route_fingerprint(route: Route) -> str:
+    """Create a short stable hash for a route without storing the full route."""
+
     route_json = json.dumps(route, separators=(",", ":"))
     return sha256(route_json.encode("utf-8")).hexdigest()[:16]
 
 
 def build_best_route_info(best: IslandResult) -> dict:
+    """Build compact metadata for the globally best route."""
+
     return {
         "rank": best.rank,
         "distance": best.best_distance,
@@ -72,6 +83,8 @@ def build_best_route_info(best: IslandResult) -> dict:
 
 
 def build_progress_history(history: list[tuple[int, float]]) -> list[dict]:
+    """Convert local progress tuples into JSON-friendly records."""
+
     return [
         {
             "generation": generation,
@@ -82,6 +95,8 @@ def build_progress_history(history: list[tuple[int, float]]) -> list[dict]:
 
 
 def safe_divide(numerator: float, denominator: float) -> float | None:
+    """Divide two numbers and return None for a zero denominator."""
+
     if denominator == 0:
         return None
     return numerator / denominator
@@ -96,6 +111,8 @@ def build_result_document(
     all_results: list[IslandResult],
     runtime_metrics: RuntimeMetrics,
 ) -> dict:
+    """Assemble the full JSON result document written by rank 0."""
+
     best = min(all_results, key=lambda r: r.best_distance)
     distances = [r.best_distance for r in all_results]
     migration_times = [result.migration_time_seconds for result in all_results]
@@ -110,6 +127,7 @@ def build_result_document(
     reference_islands = 3
     t_p = total_time_max_rank
     t_ref = t_p if mpi.size == reference_islands else None
+    # Per-run reports only know their own time; evaluators fill T_ref for non-reference sizes.
     relative_speedup = safe_divide(t_ref, t_p) if t_ref is not None else None
     relative_efficiency = (
         safe_divide(relative_speedup, mpi.size / reference_islands)
@@ -222,6 +240,8 @@ def build_result_document(
 
 
 def write_result_document(output_path: str, result_document: dict) -> None:
+    """Write a result document as formatted UTF-8 JSON."""
+
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     json_text = json.dumps(result_document, indent=2, ensure_ascii=False)
@@ -229,6 +249,8 @@ def write_result_document(output_path: str, result_document: dict) -> None:
 
 
 def print_summary(result_document: dict, output_path: str) -> None:
+    """Print a compact one-line summary for shell scripts."""
+
     run = result_document["run"]
     params = result_document["params"]
     quality = result_document["metrics"]["quality_measures"]
@@ -260,6 +282,8 @@ def finalize_run(
     runtime_metrics: RuntimeMetrics,
     timer: Callable[[], float] | None = None,
 ) -> dict:
+    """Build, persist and print the final run report."""
+
     result_document = build_result_document(
         original_config=original_config,
         effective_ga_config=effective_ga_config,

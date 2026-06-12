@@ -7,6 +7,8 @@ from evaluate_common import migration_criteria, write_outputs
 
 
 def main() -> None:
+    """Evaluate migration results for a selected run group."""
+
     parser = argparse.ArgumentParser(description="Evaluate migration criteria for all runs in a run_group_id.")
     parser.add_argument("--summary", default="results/runs.tsv")
     parser.add_argument("--run-group-id", required=True)

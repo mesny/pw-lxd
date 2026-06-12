@@ -7,6 +7,8 @@ from tsp_ga.models import Individual, MigrationStrategy
 
 
 def migrate_none(pop: list[Individual]) -> list[Individual]:
+    """Return the population unchanged when migration is disabled."""
+
     return pop
 
 
@@ -17,6 +19,8 @@ def migrate_ring(
     size: int,
     immigrants: int,
 ) -> list[Individual]:
+    """Exchange elite individuals with neighboring ranks in a ring topology."""
+
     if size <= 1 or immigrants <= 0:
         return pop
     if comm is None:
@@ -28,6 +32,7 @@ def migrate_ring(
     dest = (rank + 1) % size
     source = (rank - 1 + size) % size
 
+    # sendrecv avoids deadlock by exchanging elites with both neighbors in one MPI call.
     received = comm.sendrecv(
         sendobj=payload,
         dest=dest,
@@ -46,6 +51,8 @@ def migrate_global_best(
     size: int,
     immigrants: int,
 ) -> list[Individual]:
+    """Share elite individuals globally and keep the best combined population."""
+
     if size <= 1 or immigrants <= 0:
         return pop
     if comm is None:
@@ -55,6 +62,7 @@ def migrate_global_best(
     local_payload = [(ind.route, ind.distance) for ind in best_local]
 
     all_payloads = comm.allgather(local_payload)
+    # Every rank receives the same candidate pool, then trims it locally to the population size.
     global_candidates = [
         Individual(route=list(route), distance=float(distance))
         for payload in all_payloads
@@ -72,6 +80,8 @@ def migrate_population(
     size: int,
     immigrants: int,
 ) -> list[Individual]:
+    """Dispatch population migration to the selected strategy."""
+
     if strategy == "none":
         return migrate_none(pop)
     if strategy == "ring":

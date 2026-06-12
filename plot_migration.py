@@ -19,6 +19,8 @@ PANEL_HEIGHT = 220
 
 
 def load_results(path: Path) -> tuple[str, list[dict[str, Any]]]:
+    """Load migration evaluator output and order rows by strategy."""
+
     with path.open(encoding="utf-8") as handle:
         document = json.load(handle)
     title = f"Migracja: {document.get('run_group_id', path.stem)}"
@@ -28,6 +30,8 @@ def load_results(path: Path) -> tuple[str, list[dict[str, Any]]]:
 
 
 def nice_number(value: float, *, round_value: bool) -> float:
+    """Return a readable axis step candidate."""
+
     if value <= 0:
         return 1.0
     exponent = math.floor(math.log10(value))
@@ -40,6 +44,8 @@ def nice_number(value: float, *, round_value: bool) -> float:
 
 
 def automatic_axis(values: list[float], ticks: int = 3) -> tuple[float, float]:
+    """Choose a chart axis range and tick spacing for panel values."""
+
     data_min = min(values)
     data_max = max(values)
     if data_min == data_max:
@@ -65,6 +71,8 @@ def automatic_axis(values: list[float], ticks: int = 3) -> tuple[float, float]:
 
 
 def fmt(value: float, suffix: str = "") -> str:
+    """Format a compact metric label with an optional suffix."""
+
     if abs(value) >= 100:
         text = f"{value:.0f}"
     elif abs(value) >= 10:
@@ -75,6 +83,8 @@ def fmt(value: float, suffix: str = "") -> str:
 
 
 def panel_origin(index: int) -> tuple[int, int]:
+    """Return the top-left coordinate for a panel in the grid."""
+
     col = index % 3
     row = index // 3
     x = MARGIN_X + col * (PANEL_WIDTH + PANEL_GAP_X)
@@ -92,6 +102,8 @@ def render_panel(
     y_min: float | None = None,
     y_max: float | None = None,
 ) -> str:
+    """Render one bar-chart panel for a migration metric."""
+
     x0, y0 = panel_origin(index)
     plot_x = x0 + 54
     plot_y = y0 + 44
@@ -150,6 +162,8 @@ def render_panel(
 
 
 def render_svg(title: str, results: list[dict[str, Any]]) -> str:
+    """Render the complete migration comparison chart as SVG markup."""
+
     panels = [
         ("Najlepszy dystans", "best_distance_mean", "#2563eb", "", None, None),
         ("Poprawa dystansu vs none", "improvement_vs_none_percent", "#16a34a", "%", None, None),
@@ -173,6 +187,8 @@ def render_svg(title: str, results: list[dict[str, Any]]) -> str:
 
 
 def main() -> None:
+    """CLI entry point for generating a migration SVG chart."""
+
     parser = argparse.ArgumentParser(description="Generate an SVG chart from evaluate-quality migration JSON output.")
     parser.add_argument("input_json", type=Path)
     parser.add_argument("-o", "--output", type=Path, default=None)

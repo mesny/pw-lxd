@@ -7,6 +7,8 @@ from evaluate_common import scaling_criteria, write_outputs
 
 
 def main() -> None:
+    """Evaluate scaling results for a selected run group."""
+
     parser = argparse.ArgumentParser(description="Evaluate scaling criteria for all runs in a run_group_id.")
     parser.add_argument("--summary", default="results/runs.tsv")
     parser.add_argument("--run-group-id", required=True)

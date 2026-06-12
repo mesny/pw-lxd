@@ -18,6 +18,8 @@ PLOT_HEIGHT = HEIGHT - MARGIN_TOP - MARGIN_BOTTOM
 
 
 def load_results(path: Path) -> tuple[str, list[dict[str, Any]]]:
+    """Load scaling evaluator output and return a chart title with rows."""
+
     with path.open(encoding="utf-8") as handle:
         document = json.load(handle)
     title = f"Skalowanie: {document.get('run_group_id', path.stem)}"
@@ -26,12 +28,16 @@ def load_results(path: Path) -> tuple[str, list[dict[str, Any]]]:
 
 
 def load_total_time(path: Path) -> float:
+    """Read total execution time from a single run report."""
+
     with path.open(encoding="utf-8") as handle:
         report = json.load(handle)
     return float(report["metrics"]["performance_measures"]["total_time_seconds_T_p"])
 
 
 def add_sequential_baseline(results: list[dict[str, Any]], sequential_path: Path) -> list[dict[str, Any]]:
+    """Add sequential baseline metrics to scaling rows."""
+
     sequential_time = load_total_time(sequential_path)
     rows = [
         {
@@ -58,6 +64,8 @@ def add_sequential_baseline(results: list[dict[str, Any]], sequential_path: Path
 
 
 def nice_upper(value: float) -> float:
+    """Round an axis upper bound to a readable value."""
+
     if value <= 1:
         return 1.0
     if value <= 5:
@@ -67,6 +75,8 @@ def nice_upper(value: float) -> float:
 
 
 def points(results: list[dict[str, Any]], key: str, y_max: float) -> list[tuple[float, float]]:
+    """Map result values to SVG plot coordinates."""
+
     min_np = min(item["np"] for item in results)
     max_np = max(item["np"] for item in results)
     span = max(max_np - min_np, 1)
@@ -79,10 +89,14 @@ def points(results: list[dict[str, Any]], key: str, y_max: float) -> list[tuple[
 
 
 def polyline(point_list: list[tuple[float, float]]) -> str:
+    """Format SVG polyline coordinates."""
+
     return " ".join(f"{x:.2f},{y:.2f}" for x, y in point_list)
 
 
 def y_grid(y_max: float, ticks: int = 5) -> str:
+    """Render horizontal grid lines and labels for the SVG chart."""
+
     elements = []
     for i in range(ticks + 1):
         value = y_max * i / ticks
@@ -100,10 +114,14 @@ def y_grid(y_max: float, ticks: int = 5) -> str:
 
 
 def label_text(value: float) -> str:
+    """Format a plotted numeric value for display."""
+
     return f"{value:.2f}"
 
 
 def value_label(x: float, y: float, text: str, color: str, dx: int, dy: int) -> str:
+    """Render a small value label near a chart point."""
+
     label_width = max(34, len(text) * 7 + 10)
     label_height = 18
     label_x = x + dx
@@ -119,6 +137,8 @@ def value_label(x: float, y: float, text: str, color: str, dx: int, dy: int) -> 
 
 
 def render_svg(title: str, results: list[dict[str, Any]]) -> str:
+    """Render the complete scaling chart as SVG markup."""
+
     has_sequential = all(
         "speedup_vs_sequential_S_1" in item and "efficiency_vs_sequential_E_1" in item
         for item in results
@@ -198,6 +218,8 @@ def render_svg(title: str, results: list[dict[str, Any]]) -> str:
 
 
 def main() -> None:
+    """CLI entry point for generating a scaling SVG chart."""
+
     parser = argparse.ArgumentParser(description="Generate an SVG chart from evaluate-scaling JSON output.")
     parser.add_argument("input_json", type=Path)
     parser.add_argument("-o", "--output", type=Path, default=None)
