@@ -1,0 +1,46 @@
+
+GROUP_ID=migracja-001
+SEEDS=12345,22345,32345
+
+./mpi_experiment_migration.sh \
+  --hostfile ./hosts-4-per-node.lxd \
+  --migration-strategy none \
+  --run-group-id "$GROUP_ID" \
+  --input inputs/mazowieckie_114.csv \
+  --seeds "$SEEDS" \
+  --population 1800 \
+  --generations 100 \
+  --python .venv/bin/python \
+  --timeout 300 \
+  --fetch
+
+
+./mpi_experiment_migration.sh \
+  --hostfile ./hosts-4-per-node.lxd \
+  --migration-strategy ring \
+  --run-group-id "$GROUP_ID" \
+  --input inputs/mazowieckie_114.csv \
+  --seeds "$SEEDS" \
+  --population 1800 \
+  --generations 100 \
+  --python .venv/bin/python \
+  --timeout 300 \
+  --fetch
+
+
+./mpi_experiment_migration.sh \
+  --hostfile ./hosts-4-per-node.lxd \
+  --migration-strategy global-best \
+  --run-group-id "$GROUP_ID" \
+  --input inputs/mazowieckie_114.csv \
+  --seeds "$SEEDS" \
+  --population 1800 \
+  --generations 100 \
+  --python .venv/bin/python \
+  --timeout 300 \
+  --fetch
+
+
+.venv/bin/python evaluate_migration.py \
+  --summary results/runs.tsv \
+  --run-group-id "$GROUP_ID"

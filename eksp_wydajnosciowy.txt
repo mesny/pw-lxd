@@ -1,0 +1,43 @@
+GROUP_ID=skalowanie-003
+SEEDS=12345,22345,32345
+
+
+./mpi_experiment_scaling.sh \
+  --hostfile ./hosts-1-per-node.lxd \
+  --run-group-id "$GROUP_ID" \
+  --input inputs/mazowieckie_114.csv \
+  --seeds "$SEEDS" \
+  --population 1800 \
+  --generations 100 \
+  --python .venv/bin/python \
+  --timeout 180 \
+  --fetch
+
+
+./mpi_experiment_scaling.sh \
+  --hostfile ./hosts-2-per-node.lxd \
+  --run-group-id "$GROUP_ID" \
+  --input inputs/mazowieckie_114.csv \
+  --seeds "$SEEDS" \
+  --population 1800 \
+  --generations 100 \
+  --python .venv/bin/python \
+  --timeout 180 \
+  --fetch
+
+
+./mpi_experiment_scaling.sh \
+  --hostfile ./hosts-4-per-node.lxd \
+  --run-group-id "$GROUP_ID" \
+  --input inputs/mazowieckie_114.csv \
+  --seeds "$SEEDS" \
+  --population 1800 \
+  --generations 100 \
+  --python .venv/bin/python \
+  --timeout 180 \
+  --fetch
+
+
+.venv/bin/python evaluate_scaling.py \
+  --summary results/runs.tsv \
+  --run-group-id "$GROUP_ID"
