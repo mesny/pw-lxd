@@ -1,0 +1,184 @@
+from __future__ import annotations
+
+import csv
+import json
+import statistics
+from collections import defaultdict
+from pathlib import Path
+from typing import Any
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def read_runs(summary_path: Path) -> list[dict[str, str]]:
+    with summary_path.open(newline="", encoding="utf-8") as handle:
+        return list(csv.DictReader(handle, delimiter="\t"))
+
+
+def mean(values: list[float]) -> float | None:
+    return statistics.mean(values) if values else None
+
+
+def pct_improvement(baseline: float | None, value: float | None) -> float | None:
+    if baseline in {None, 0.0} or value is None:
+        return None
+    return 100.0 * (baseline - value) / baseline
+
+
+def load_rows_with_reports(summary_path: Path, run_group_id: str) -> list[dict[str, Any]]:
+    rows = [row for row in read_runs(summary_path) if row.get("run_group_id") == run_group_id]
+    loaded: list[dict[str, Any]] = []
+
+    for row in rows:
+        result_path = summary_path.parent / row["result_file"]
+        if not result_path.exists():
+            raise FileNotFoundError(f"Missing result file listed in {summary_path}: {result_path}")
+        loaded.append({"row": row, "report": load_json(result_path), "result_path": str(result_path)})
+
+    return loaded
+
+
+def scaling_criteria(summary_path: Path, run_group_id: str) -> dict[str, Any]:
+    loaded = load_rows_with_reports(summary_path, run_group_id)
+    by_np: dict[int, list[dict[str, Any]]] = defaultdict(list)
+
+    for item in loaded:
+        by_np[int(item["row"]["np"])].append(item)
+
+    if not by_np:
+        raise ValueError(f"No runs found for run_group_id={run_group_id}")
+
+    reference_np = 3 if 3 in by_np else min(by_np)
+    reference_times = [
+        item["report"]["metrics"]["performance_measures"]["total_time_seconds_T_p"]
+        for item in by_np[reference_np]
+    ]
+    t_ref_mean = mean(reference_times)
+
+    results: list[dict[str, Any]] = []
+    for np_value in sorted(by_np):
+        items = by_np[np_value]
+        times = [
+            item["report"]["metrics"]["performance_measures"]["total_time_seconds_T_p"]
+            for item in items
+        ]
+        best_distances = [
+            item["report"]["metrics"]["quality_measures"]["best_distance"]
+            for item in items
+        ]
+        diversity = [
+            item["report"]["metrics"]["quality_measures"]["diversity"]["mean_pairwise_edge_distance"]
+            for item in items
+        ]
+        t_p_mean = mean(times)
+        speedup = t_ref_mean / t_p_mean if t_ref_mean is not None and t_p_mean not in {None, 0.0} else None
+        efficiency = speedup / (np_value / reference_np) if speedup is not None else None
+
+        results.append(
+            {
+                "np": np_value,
+                "runs": len(items),
+                "mean_time_seconds_T_p": t_p_mean,
+                "reference_time_seconds_T_ref": t_ref_mean,
+                "relative_speedup_S_ref": speedup,
+                "relative_efficiency_E_ref": efficiency,
+                "best_distance_min": min(best_distances),
+                "best_distance_mean": mean(best_distances),
+                "edge_diversity_mean": mean(diversity),
+            }
+        )
+
+    return {
+        "experiment_type": "scaling",
+        "run_group_id": run_group_id,
+        "formulas": {
+            "relative_speedup": "S_ref(p) = T_ref / T(p)",
+            "relative_efficiency": "E_ref(p) = S_ref(p) / (p / 3)",
+        },
+        "reference_np": reference_np,
+        "results": results,
+    }
+
+
+def migration_criteria(summary_path: Path, run_group_id: str) -> dict[str, Any]:
+    loaded = load_rows_with_reports(summary_path, run_group_id)
+    by_strategy: dict[str, list[dict[str, Any]]] = defaultdict(list)
+
+    for item in loaded:
+        by_strategy[item["row"]["migration"]].append(item)
+
+    if not by_strategy:
+        raise ValueError(f"No runs found for run_group_id={run_group_id}")
+
+    none_distances = [
+        item["report"]["metrics"]["quality_measures"]["best_distance"]
+        for item in by_strategy.get("none", [])
+    ]
+    baseline_best_mean = mean(none_distances)
+
+    results: list[dict[str, Any]] = []
+    for strategy in sorted(by_strategy):
+        items = by_strategy[strategy]
+        best_distances = [
+            item["report"]["metrics"]["quality_measures"]["best_distance"]
+            for item in items
+        ]
+        times = [
+            item["report"]["metrics"]["performance_measures"]["total_time_seconds_T_p"]
+            for item in items
+        ]
+        migration_seconds = [
+            item["report"]["metrics"]["performance_measures"]["migration_total_seconds"]
+            for item in items
+        ]
+        migration_overheads = [
+            item["report"]["metrics"]["performance_measures"]["migration_overhead_ratio"] or 0.0
+            for item in items
+        ]
+        diversity = [
+            item["report"]["metrics"]["quality_measures"]["diversity"]["mean_pairwise_edge_distance"]
+            for item in items
+        ]
+        best_mean = mean(best_distances)
+
+        results.append(
+            {
+                "migration_strategy": strategy,
+                "runs": len(items),
+                "best_distance_min": min(best_distances),
+                "best_distance_mean": best_mean,
+                "improvement_vs_none_percent": pct_improvement(baseline_best_mean, best_mean),
+                "mean_time_seconds": mean(times),
+                "migration_seconds_mean": mean(migration_seconds),
+                "migration_overhead_ratio_mean": mean(migration_overheads),
+                "edge_diversity_mean": mean(diversity),
+            }
+        )
+
+    return {
+        "experiment_type": "migration",
+        "run_group_id": run_group_id,
+        "formulas": {
+            "improvement_vs_none_percent": "100 * (D_none - D_strategy) / D_none",
+            "migration_overhead_ratio": "M = migration_seconds_total / T(p)",
+        },
+        "baseline_strategy": "none",
+        "results": results,
+    }
+
+
+def write_outputs(document: dict[str, Any], output_json: Path, output_tsv: Path) -> None:
+    output_json.parent.mkdir(parents=True, exist_ok=True)
+    output_json.write_text(json.dumps(document, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    rows = document["results"]
+    if not rows:
+        return
+
+    output_tsv.parent.mkdir(parents=True, exist_ok=True)
+    with output_tsv.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()), delimiter="\t")
+        writer.writeheader()
+        writer.writerows(rows)
