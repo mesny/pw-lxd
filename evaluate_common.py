@@ -57,6 +57,7 @@ def scaling_criteria(summary_path: Path, run_group_id: str) -> dict[str, Any]:
     by_np: dict[int, list[dict[str, Any]]] = defaultdict(list)
 
     for item in loaded:
+        # Group repeated runs by MPI size before calculating averages used in the report.
         by_np[int(item["row"]["np"])].append(item)
 
     if not by_np:
@@ -86,6 +87,7 @@ def scaling_criteria(summary_path: Path, run_group_id: str) -> dict[str, Any]:
             for item in items
         ]
         t_p_mean = mean(times)
+        # Speedup is relative to the selected baseline, not necessarily to one process.
         speedup = t_ref_mean / t_p_mean if t_ref_mean is not None and t_p_mean not in {None, 0.0} else None
         efficiency = speedup / (np_value / reference_np) if speedup is not None else None
 
@@ -122,6 +124,7 @@ def migration_criteria(summary_path: Path, run_group_id: str) -> dict[str, Any]:
     by_strategy: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
     for item in loaded:
+        # Strategy is the experimental factor here; all seeds for the same strategy are averaged.
         by_strategy[item["row"]["migration"]].append(item)
 
     if not by_strategy:
@@ -131,6 +134,7 @@ def migration_criteria(summary_path: Path, run_group_id: str) -> dict[str, Any]:
         item["report"]["metrics"]["quality_measures"]["best_distance"]
         for item in by_strategy.get("none", [])
     ]
+    # The "none" scenario is the baseline for judging whether migration improved solution quality.
     baseline_best_mean = mean(none_distances)
 
     results: list[dict[str, Any]] = []
@@ -149,6 +153,7 @@ def migration_criteria(summary_path: Path, run_group_id: str) -> dict[str, Any]:
             for item in items
         ]
         migration_overheads = [
+            # Missing overhead is treated as zero for the no-migration scenario.
             item["report"]["metrics"]["performance_measures"]["migration_overhead_ratio"] or 0.0
             for item in items
         ]

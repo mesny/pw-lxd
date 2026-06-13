@@ -19,6 +19,7 @@ from tsp_ga.timing import StageTimer
 def build_rank_seed(base_seed: int, rank: int) -> int:
     """Derive a stable, distinct random seed for each MPI rank."""
 
+    # A large odd offset keeps rank streams reproducible while reducing overlap between islands.
     return base_seed + rank * 100_003
 
 
@@ -42,6 +43,7 @@ def run_island(
     rng = random.Random(rng_seed)
 
     pop = initial_population(ga_config.population, len(problem.cities), problem.distances, rng)
+    # best_seen is historical, not only current-generation best, so migration cannot overwrite progress.
     best_seen = best_individual(pop)
     best_generation = 0
     history: History = []
@@ -121,6 +123,7 @@ def run_ga(config: AppConfig) -> dict | None:
     problem_obj, metrics.prepare_problem_seconds = timer.measure(lambda: prepare_problem(config.experiment, mpi))
     problem = problem_obj
 
+    # Each rank evolves independently after receiving the same problem definition.
     local_result_obj, metrics.run_island_seconds = timer.measure(
         lambda: run_island(
             ga_config=effective_ga_config,
@@ -132,6 +135,7 @@ def run_ga(config: AppConfig) -> dict | None:
     )
     local_result = local_result_obj
 
+    # Only rank 0 receives the full list; worker ranks return after contributing their local result.
     all_results_obj, metrics.gather_seconds = timer.measure(lambda: collect_results(local_result, mpi))
     all_results = all_results_obj
     metrics.total_seconds = monotonic_seconds(mpi) - total_start

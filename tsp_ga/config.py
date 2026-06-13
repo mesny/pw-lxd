@@ -13,6 +13,8 @@ SUPPORTED_MIGRATION_STRATEGIES = {"none", "ring", "global-best"}
 def build_config(args: argparse.Namespace) -> AppConfig:
     """Translate parsed CLI arguments into application configuration."""
 
+    # For the no-migration baseline, ignore the immigrant count so reports do not
+    # suggest communication work that was intentionally disabled.
     immigrants = 0 if args.migration_strategy == "none" else args.immigrants
 
     return AppConfig(
@@ -53,6 +55,8 @@ def build_population_plan(config: GAConfig, world_size: int) -> PopulationPlan:
     if world_size < 1:
         raise ValueError("world_size must be >= 1")
 
+    # In per-rank mode each MPI process receives the same local population, so
+    # the total search effort grows together with the number of processes.
     if config.population_mode == "per-rank":
         return PopulationPlan(
             requested_population=config.population,
@@ -70,6 +74,7 @@ def build_population_plan(config: GAConfig, world_size: int) -> PopulationPlan:
     ]
 
     min_population = min(per_rank_populations)
+    # Tournament, elitism and migration all need a small but non-trivial local population.
     if min_population < 4:
         raise ValueError(
             "--population is too small for --population-mode total and current MPI size: "

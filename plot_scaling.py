@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+# Matplotlib may try to write font/cache files; keep that cache inside a writable temp directory.
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
 
 import matplotlib
@@ -36,6 +37,7 @@ def add_sequential_baseline(results: list[dict[str, Any]], sequential_path: Path
     """Add sequential baseline metrics to scaling rows."""
 
     sequential_time = load_total_time(sequential_path)
+    # Sequential baseline lets the chart show classic S(1) and E(1), even if evaluator data uses S_ref.
     rows = [
         {
             **item,
@@ -126,6 +128,7 @@ def render_series_chart(
     ax.set_title(f"{title} - {label}", fontweight="bold", pad=14)
     style_axes(ax, x_values, label)
     ax.margins(y=0.18)
+    # Legend is placed below the axes so it cannot cover data labels or trend lines.
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18), frameon=False)
     fig.tight_layout(rect=(0, 0.07, 1, 1))
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -179,6 +182,7 @@ def main() -> None:
         print(f"Chart written to: {output}")
         return
 
+    # Default output is one file per metric because these charts are embedded separately in the report.
     for series in choose_series(results):
         output = output_path_for_series(output_prefix, series[3])
         render_series_chart(title, series, results, output)

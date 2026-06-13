@@ -84,6 +84,7 @@ def ordered_crossover(parent_a: Route, parent_b: Route, rng: random.Random) -> R
     used = set(x for x in child if x is not None)
     insert_pos = (right + 1) % n
 
+    # Wrapping after right keeps the child aligned with the classical OX operator for permutations.
     for gene in parent_b[right + 1:] + parent_b[:right + 1]:
         if gene not in used:
             child[insert_pos] = gene
@@ -131,6 +132,7 @@ def random_two_opt_improvement(route: Route, dist: DistanceMatrix, max_attempts:
         return best
 
     for _ in range(max_attempts):
+        # Keep endpoints separated so the 2-opt move reverses a real segment, not adjacent edges.
         i = rng.randrange(1, n - 2)
         j = rng.randrange(i + 2, n)
 

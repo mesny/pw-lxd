@@ -36,9 +36,11 @@ def evolve_one_generation(
 
     pop_size = len(pop)
     n = len(dist)
+    # Elitism prevents the best already-found individuals from being lost during crossover/mutation.
     new_pop = select_elite(pop, config.elite)
 
     while len(new_pop) < pop_size:
+        # Tournament selection gives fitter routes more chances without sorting the whole population.
         parent_a = tournament_select(pop, config.tournament, rng)
         parent_b = tournament_select(pop, config.tournament, rng)
 

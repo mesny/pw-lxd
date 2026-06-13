@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+# Matplotlib needs a writable cache directory when running in the project sandbox.
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
 
 import matplotlib
@@ -15,6 +16,7 @@ from matplotlib import pyplot as plt
 
 
 PANEL_SPECS = [
+    # Narrow y-axis ranges on distance/time charts make small strategy differences visible.
     ("Najlepszy dystans", "best_distance_mean", "#2563eb", "", 3550.0, 3750.0),
     ("Poprawa dystansu vs none", "improvement_vs_none_percent", "#16a34a", "%", None, None),
     ("Czas wykonania", "mean_time_seconds", "#dc2626", "s", 1.75, 1.90),
@@ -75,6 +77,7 @@ def render_metric_chart(
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     if y_min is not None or y_max is not None:
+        # Some metrics intentionally use a zoomed axis; value labels still show absolute values.
         ax.set_ylim(bottom=y_min, top=y_max)
     else:
         ax.margins(y=0.18)
@@ -115,6 +118,7 @@ def render_combined_chart(title: str, results: list[dict[str, Any]], output_path
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
         if y_min is not None or y_max is not None:
+            # Keep the combined overview visually consistent with the standalone metric charts.
             ax.set_ylim(bottom=y_min, top=y_max)
         else:
             ax.margins(y=0.18)
@@ -154,6 +158,7 @@ def main() -> None:
         print(f"Chart written to: {output}")
         return
 
+    # Separate files are easier to place and reference individually in the DOCX report.
     for spec in PANEL_SPECS:
         output = output_path_for_metric(output_prefix, spec[1])
         render_metric_chart(title, spec, results, output)

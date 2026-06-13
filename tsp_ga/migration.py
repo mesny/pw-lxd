@@ -26,6 +26,7 @@ def migrate_ring(
     if comm is None:
         raise RuntimeError("MPI communicator is required for migration when size > 1.")
 
+    # Only elite routes are sent; the rest of each island remains local to preserve diversity.
     best_local = heapq.nsmallest(immigrants, pop, key=lambda ind: ind.distance)
     payload = [(ind.route, ind.distance) for ind in best_local]
 
@@ -63,6 +64,7 @@ def migrate_global_best(
 
     all_payloads = comm.allgather(local_payload)
     # Every rank receives the same candidate pool, then trims it locally to the population size.
+    # This speeds convergence, but can also make islands collapse to similar routes.
     global_candidates = [
         Individual(route=list(route), distance=float(distance))
         for payload in all_payloads

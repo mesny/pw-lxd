@@ -71,6 +71,7 @@ def route_fingerprint(route: Route) -> str:
 def build_best_route_info(best: IslandResult) -> dict:
     """Build compact metadata for the globally best route."""
 
+    # The full route can be large, so the report stores a fingerprint and key metadata instead.
     return {
         "rank": best.rank,
         "distance": best.best_distance,
@@ -124,6 +125,7 @@ def build_result_document(
     total_time_max_rank = runtime_metrics.total_seconds_max_rank
     sorted_results = sorted(all_results, key=lambda r: r.rank)
     diversity = build_diversity_document(all_results)
+    # The experiment report uses the 3-rank run as the reference point for relative scaling.
     reference_islands = 3
     t_p = total_time_max_rank
     t_ref = t_p if mpi.size == reference_islands else None

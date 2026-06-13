@@ -22,6 +22,7 @@ def load_cities_from_csv(path: str) -> list[City]:
 
         for line_number, row in enumerate(reader, start=2):
             try:
+                # Only coordinates define the TSP instance; optional id/name columns are ignored.
                 x = float(row["x"])
                 y = float(row["y"])
             except (TypeError, ValueError) as exc:
@@ -64,6 +65,7 @@ def build_distance_matrix(cities: list[City]) -> DistanceMatrix:
         for j in range(i + 1, n):
             xj, yj = cities[j]
             d = math.hypot(xi - xj, yi - yj)
+            # Euclidean TSP is symmetric, so computing one triangle and mirroring it halves the work.
             matrix[i][j] = d
             matrix[j][i] = d
 
