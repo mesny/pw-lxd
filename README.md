@@ -1,73 +1,113 @@
-
-```markdown
 # MPI TSP Genetic Algorithm for LXD Cluster
 
-Testowalny prototyp równoległego algorytmu genetycznego dla problemu komiwojażera TSP, zrealizowany w modelu wyspowym z użyciem MPI.
+Testowalny prototyp równoległego algorytmu genetycznego dla problemu komiwojażera TSP, zrealizowany w modelu wyspowym z użyciem MPI i kontenerów systemowych LXD.
 
-Projekt jest przygotowany pod uruchamianie w klastrze LXD, gdzie:
+Podstawowy model wykonania:
 
 ```text
 1 kontener LXD = 1 wyspa algorytmu genetycznego = 1 proces MPI = 1 rank MPI
 ```
 
-LXD dostarcza izolowane środowiska wykonawcze, natomiast podział pracy, komunikacja i migracja osobników są realizowane przez MPI.
+LXD dostarcza izolowane środowiska wykonawcze, natomiast podział pracy, komunikacja, migracja osobników i zbieranie wyników są realizowane przez MPI.
 
-## Założenie infrastrukturalne
+## Infrastruktura
 
-Docelowy eksperyment zakłada klaster z 3 nodami LXD. Na każdym nodzie na eksperymenty przeznaczane są:
-
-```text
-4 vCPU
-16 GB RAM
-```
-
-Przy modelu `1 kontener = 1 rank MPI` uruchamiany jest wariant:
+Docelowy wariant eksperymentu zakłada klaster z 3 węzłami LXD. Na każdym węźle uruchamiane są kontenery systemowe pełniące rolę wysp algorytmu genetycznego.
 
 ```text
-4 kontenery LXD na node
-12 kontenerów LXD łącznie
-12 ranków MPI
+3 węzły LXD
+4 kontenery LXD na węzeł
+12 kontenerów / ranków MPI łącznie
 1 vCPU na kontener
-4 GB RAM na kontener
+4 GiB RAM na kontener
 ```
 
-Pełny wariant eksperymentu używa więc 12 ranków z pliku `hosts-4-per-node.lxd`.
-Do pomiaru skalowania porównywane są jawne pliki hostów, dzięki czemu wiadomo,
-na których nodach uruchamiane są kontenery:
+Do eksperymentów skalowania używane są jawne pliki hostów MPI:
 
 ```text
-hosts-1-per-node.lxd  -> 3 ranki,  po 1 kontenerze na node
-hosts-2-per-node.lxd  -> 6 ranków, po 2 kontenery na node
-hosts-4-per-node.lxd  -> 12 ranków, po 4 kontenery na node
-hosts-8-per-node.lxd  -> 24 ranki, po 8 kontenerów na node (wariant rozszerzony)
+hosts-1-per-node.lxd  -> 3 ranki,  po 1 kontenerze na węzeł
+hosts-2-per-node.lxd  -> 6 ranków, po 2 kontenery na węzeł
+hosts-4-per-node.lxd  -> 12 ranków, po 4 kontenery na węzeł
+hosts-8-per-node.lxd  -> 24 ranki, po 8 kontenerów na węzeł (wariant rozszerzony)
 ```
 
-## Kluczowe założenie eksperymentalne
+Wariant MPI korzysta również z infrastruktury przygotowanej ponad podstawową konfiguracją LXD:
 
-Program rozróżnia dwa tryby interpretacji populacji:
+- prywatny DNS oparty o `dnsmasq`, z nazwami kontenerów w domenie `.lxd`,
+- prywatna sieć VPN oparta na WireGuard między węzłami,
+- sieć typu overlay dla komunikacji kontenerów ponad rozproszonymi hostami,
+- pliki `hosts-*.lxd` przekazywane do `mpirun --hostfile`,
+- OpenMPI i `mpi4py` wewnątrz kontenerów,
+- profil LXD `mpi-worker` z limitami `limits.cpu=1` i `limits.memory=4GiB`,
+- skrypty pomocnicze do zapisu DNS, uruchamiania eksperymentów i pobierania wyników.
+
+## Parametry finalnych eksperymentów MPI
+
+W raporcie końcowym opisane są dwie główne grupy eksperymentów: skalowanie liczby procesów MPI oraz porównanie strategii migracji.
+
+Wspólne parametry algorytmu:
+
+| Parametr | Wartość |
+|---|---|
+| Dane wejściowe | `inputs/mazowieckie_114.csv` |
+| Liczba miast | `114` |
+| Tryb populacji | `--population-mode total` |
+| Populacja całkowita | `1800` |
+| Liczba generacji | `100` |
+| Mutacja | `0.15`, mutacja typu swap |
+| Elityzm | `2` |
+| Selekcja | turniejowa, `--tournament 4` |
+| Krzyżowanie | ordered crossover |
+| Lokalna poprawa | `--two-opt-attempts 5` |
+| Limity kontenera | `1 vCPU`, `4GiB RAM` |
+
+Eksperyment skalowania MPI:
+
+| Parametr | Wartość |
+|---|---|
+| Grupa wyników | `skalowanie-005` |
+| Skrypt | `mpi_experiment_scaling.sh` |
+| Pliki hostów | `hosts-1-per-node.lxd`, `hosts-2-per-node.lxd`, `hosts-4-per-node.lxd` |
+| Liczba ranków | `3`, `6`, `12` |
+| Populacja na rank | `600`, `300`, `150` |
+| Strategia migracji | `none` |
+| Interwał migracji | `25`, zapisany w konfiguracji, ale bez realnej wymiany dla `none` |
+| Liczba imigrantów | `0` |
+
+Eksperyment migracji MPI:
+
+| Parametr | Wartość |
+|---|---|
+| Grupa wyników | `migracja-002` |
+| Skrypt | `mpi_experiment_migration.sh` |
+| Plik hostów | `hosts-4-per-node.lxd` |
+| Liczba ranków | `12` |
+| Populacja na rank | `150` |
+| Strategie | `none`, `ring`, `global-best` |
+| `none` | `migration-interval=50`, `immigrants=0` |
+| `ring` | `migration-interval=50`, `immigrants=2` |
+| `global-best` | `migration-interval=100`, `immigrants=1` |
+
+Wykresy w raporcie są generowane z zagregowanych wyników tworzonych przez `evaluate_scaling.py` i `evaluate_migration.py`. Dane na wykresach są uśredniane z 10 niezależnych uruchomień dla każdego eksperymentu, aby ograniczyć wpływ losowości algorytmu genetycznego.
+
+## Interpretacja populacji
+
+Program rozróżnia dwa tryby interpretacji parametru `--population`:
 
 ```text
 --population-mode per-rank   --population oznacza populację na każdej wyspie/ranku MPI
 --population-mode total      --population oznacza łączny budżet populacji dzielony przez liczbę ranków MPI
 ```
 
-W trybie `total` populacja jest dzielona z obsługą reszty, np.:
+W finalnych eksperymentach MPI używany jest tryb `total`, np.:
 
 ```text
-population=1200, ranks=12
-rank 0..11: 100 osobników
-łącznie: 1200 osobników
+population=1800, ranks=12
+rank 0..11: 150 osobników
+łącznie: 1800 osobników
 ```
 
-Do badania jakości modelu wyspowego można używać `per-rank`, bo wraz z liczbą wysp rośnie całkowity budżet obliczeń.
-
-Do badania przyspieszenia bardziej uczciwy jest tryb `total`, ponieważ całkowity budżet populacji pozostaje zbliżony między wariantami. W eksperymencie opartym o pliki `hosts-*` przyspieszenie liczone jest względem najmniejszego równomiernego wariantu `hosts-1-per-node.lxd`:
-
-```text
-S_ref(p) = T_ref / T(p)
-T_ref = czas dla hosts-1-per-node.lxd
-E_ref(p) = S_ref(p) / (p / 3)
-```
+Tryb `total` jest używany w eksperymencie skalowania, ponieważ utrzymuje stały całkowity budżet populacji przy różnej liczbie ranków. Dzięki temu porównanie czasu wykonania nie jest zaburzone tym, że większa liczba procesów wykonywałaby większą całkowitą pracę.
 
 ## Struktura projektu
 
@@ -87,6 +127,13 @@ mpi-tsp-ga/
 │   ├── runner.py
 │   └── cli.py
 ├── main.py
+├── mpi_run_ga.sh
+├── mpi_experiment_scaling.sh
+├── mpi_experiment_migration.sh
+├── evaluate_scaling.py
+├── evaluate_migration.py
+├── plot_scaling.py
+├── plot_migration.py
 ├── pyproject.toml
 └── README.md
 ```
@@ -98,13 +145,13 @@ mpi-tsp-ga/
 | `models.py` | Modele danych, typy, konfiguracje i metryki runtime; bez importu `mpi4py` |
 | `config.py` | Budowanie, walidacja i rozwiązywanie populacji per rank |
 | `problem.py` | Wczytywanie/generowanie miast oraz macierz odległości |
-| `operators.py` | Operatory GA: selekcja, crossover, mutacja, losowy 2-opt delta O(1), walidacja trasy O(n) |
-| `evolution.py` | Ewolucja jednej generacji; elita przez `heapq.nsmallest` |
-| `migration.py` | Strategie migracji `none`, `ring` i `global-best`; migranci przez `heapq.nsmallest` |
+| `operators.py` | Operatory GA: selekcja turniejowa, ordered crossover, mutacja swap, losowy 2-opt i walidacja tras |
+| `evolution.py` | Ewolucja jednej generacji i elityzm |
+| `migration.py` | Strategie migracji `none`, `ring` i `global-best` |
 | `mpi_runtime.py` | Kontekst MPI i zbieranie wyników |
-| `timing.py` | Prosty `StageTimer` do mierzenia etapów wykonania |
+| `timing.py` | `StageTimer` do mierzenia etapów wykonania |
 | `reporting.py` | Budowanie dokumentu wynikowego JSON, zapis JSON i krótki komunikat stdout |
-| `runner.py` | Uruchamianie wariantu MPI |
+| `runner.py` | Główny przebieg wariantu MPI |
 | `cli.py` | Interfejs linii poleceń |
 | `main.py` | Cienki entrypoint aplikacji |
 
@@ -118,8 +165,6 @@ main.py
       -> validate_config(config)
       -> run_ga(config)
 ```
-
-Aplikacja uruchamia wariant MPI: wiele wysp, jedna wyspa na rank MPI.
 
 W trybie MPI:
 
@@ -138,7 +183,7 @@ run_ga(config)
       -> initial_population(...)
       -> for each generation:
           -> evolve_one_generation(...)
-          -> migration according to --migration-strategy
+          -> optional migration
       -> IslandResult z metrykami czasu migracji i ewolucji
   -> collect_results(...)
       -> comm.gather(local_result, root=0)
@@ -146,12 +191,7 @@ run_ga(config)
       -> finalize_run(...)
 ```
 
-Wszystkie ranki rozwiązują tę samą instancję TSP. Lista miast jest przygotowywana tylko na ranku 0:
-
-- jeśli podano `--input`, miasta są wczytywane z pliku CSV,
-- jeśli nie podano `--input`, rank 0 generuje `--cities` losowych punktów 2D z użyciem `--seed`.
-
-Te punkty są traktowane jako miasta TSP. Następnie lista miast jest rozsyłana do wszystkich ranków przez `comm.bcast(cities, root=0)`. Każdy rank buduje lokalnie tę samą macierz odległości, ale używa innego ziarna RNG, więc startuje z inną populacją tras i przeszukuje inne obszary przestrzeni rozwiązań.
+Wszystkie ranki rozwiązują tę samą instancję TSP. Rank 0 przygotowuje listę miast i rozsyła ją przez `comm.bcast(cities, root=0)`. Każdy rank buduje tę samą macierz odległości, ale używa innego ziarna RNG, więc startuje z inną populacją początkową.
 
 ## Strategie migracji
 
@@ -160,78 +200,86 @@ Program obsługuje trzy strategie migracji:
 ```text
 none         brak migracji; wyspy pracują niezależnie
 ring         migracja pierścieniowa: rank i -> rank i+1
-global-best  każda wyspa wysyła swoje elity, a wszystkie wyspy dostają globalną pulę elit
+global-best  każda wyspa wysyła elity, a wszystkie wyspy dostają globalną pulę elit
 ```
 
-### `global-best`
-
-Strategia `global-best` działa przez MPI `allgather()`:
-
-```text
-1. każda wyspa wybiera swoich najlepszych --immigrants osobników,
-2. wszystkie wyspy wymieniają te listy przez allgather,
-3. każda wyspa otrzymuje globalną pulę elit ze wszystkich ranków,
-4. każda wyspa scala lokalną populację z globalną pulą,
-5. każda wyspa zachowuje najlepsze osobniki do swojego lokalnego rozmiaru populacji.
-```
-
-Dla `p` ranków i `m` migrantów na rank każda wyspa dostaje do rozważenia do `p × m` osobników globalnych. To zwiększa koszt komunikacji względem `ring`, ale szybciej propaguje dobre rozwiązania.
-
-Zalecane parametry dla `global-best`:
-
-```text
---immigrants 1 albo 2
---migration-interval 50 albo 100
-```
-
-Ta strategia jest dobra jako wariant eksperymentalny do porównania wpływu topologii migracji na jakość rozwiązania, szybkość zbieżności i narzut komunikacji.
-
-## Optymalizacje złożoności obliczeniowej
-
-### Walidacja trasy O(n)
-
-`validate_route()` używa `collections.Counter`, więc wykrycie duplikatów, braków i nieoczekiwanych miast jest liniowe względem liczby miast.
-
-### Losowy 2-opt z oceną delta O(1)
-
-`random_two_opt_improvement()` nie przelicza całej długości trasy po każdej próbie. Liczy zmianę kosztu tylko dla czterech krawędzi:
-
-```text
-stare: (a,b), (c,d)
-nowe:  (a,c), (b,d)
-```
-
-Ocena pojedynczej próby 2-opt ma koszt O(1), a losowanie segmentu pomija nieużyteczne pary sąsiadujące.
-
-### `heapq.nsmallest` zamiast pełnego sortowania
-
-Dla wyboru elity i migrantów używane jest:
-
-```python
-heapq.nsmallest(k, pop, key=lambda ind: ind.distance)
-```
-
-Dla małego `k` ogranicza to koszt z pełnego sortowania `O(n log n)` do około `O(n log k)`.
-
-### `best_seen`
-
-Wyspa trzyma najlepszy historycznie znaleziony osobnik jako `best_seen`. Nie zakładamy, że najlepszy osobnik zawsze pozostanie w aktualnej populacji po zmianie strategii migracji lub ewolucji.
+Strategia `ring` używa MPI `sendrecv()` i wymienia najlepsze osobniki tylko z sąsiednim rankiem. Strategia `global-best` używa `allgather()` i udostępnia pulę elit wszystkim rankom. W wynikach raportu `ring` dał najlepszy kompromis jakości, różnorodności i kosztu komunikacji, natomiast `global-best` szybko ujednolicił populacje.
 
 ## Wynik programu
 
 Program zawsze zapisuje pełny wynik do pliku JSON wskazanego przez wymagany parametr `--output`.
 
-Na stdout wypisywana jest tylko jedna krótka linia podsumowania, np.:
+Na stdout wypisywana jest tylko jedna krótka linia podsumowania:
 
 ```text
-DONE run_id=lxd-3nodes-4containers-001 mode=mpi ranks=12 cities=100 population_total=1200 best_distance=1234.567890 edge_diversity_mean=0.420000 elapsed_seconds=12.345678 migration_seconds=0.123456 output=results/lxd-3nodes-4containers-001.json
+DONE run_id=... mode=mpi ranks=12 cities=114 population_total=1800 best_distance=... edge_diversity_mean=... elapsed_seconds=... migration_seconds=... output=results/...
 ```
 
-## Metryki dywersyfikacji
+Aktualna struktura pliku JSON:
 
-Wynik JSON zawiera sekcję `diversity`, która opisuje podobieństwo najlepszych tras znalezionych przez wyspy.
+```text
+run
+params
+metrics
+  quality_measures
+  performance_measures
+islands
+notes
+```
 
-Trasa TSP jest zamieniana na zbiór nieskierowanych krawędzi cyklu. Odległość między dwiema trasami jest liczona jako:
+Najważniejsze pola `params`:
+
+```text
+input
+cities
+seed
+islands
+generations
+population_mode
+population_total
+population_per_island
+mutation
+elite
+tournament
+two_opt_attempts
+migration_strategy
+migration_interval
+immigrants
+cpu_limit
+memory_limit
+```
+
+Najważniejsze metryki jakości:
+
+```text
+best_distance
+mean_island_distance
+distance_spread
+improvement_vs_none_percent
+diversity.mean_pairwise_edge_distance
+best_route.route_fingerprint
+```
+
+Najważniejsze metryki wydajności:
+
+```text
+total_time_seconds_T_p
+relative_speedup_S_ref
+relative_efficiency_E_ref
+elapsed_seconds
+prepare_problem_seconds
+run_island_seconds
+gather_seconds
+report_seconds
+evolution_max_rank_seconds
+migration_total_seconds
+migration_count_total
+migration_overhead_ratio
+```
+
+## Metryka różnorodności tras
+
+Różnorodność najlepszych tras między wyspami jest liczona przez podobieństwo krawędzi cyklu TSP.
 
 ```text
 edge_distance = 1 - liczba_wspólnych_krawędzi / liczba_krawędzi
@@ -244,47 +292,65 @@ Interpretacja:
 1.0  najlepsze trasy nie mają wspólnych krawędzi
 ```
 
-Sekcja `diversity` zawiera:
+Ta metryka jest szczególnie przydatna przy porównaniu `none`, `ring` i `global-best`, ponieważ pokazuje, czy migracja nie doprowadziła do przedwczesnego ujednolicenia wysp.
 
-```text
-unique_best_routes
-pairwise_comparisons
-mean_pairwise_edge_distance
-min_pairwise_edge_distance
-max_pairwise_edge_distance
+## Uruchomienie eksperymentów raportowych
+
+Eksperyment skalowania zgodny z raportem:
+
+```bash
+./mpi_experiment_scaling.sh \
+  --hostfiles ./hosts-1-per-node.lxd,./hosts-2-per-node.lxd,./hosts-4-per-node.lxd \
+  --run-group-id skalowanie-005 \
+  --input inputs/mazowieckie_114.csv \
+  --seeds 32345 \
+  --population 1800 \
+  --generations 100 \
+  --python .venv/bin/python \
+  --fetch
 ```
 
-Ta metryka jest szczególnie przydatna przy porównaniu `none`, `ring` i `global-best`, bo pokazuje, czy migracja nie doprowadziła do przedwczesnego ujednolicenia wysp.
+Eksperyment migracji zgodny z raportem:
 
-## Metryki komunikacji i czasu
-
-Wynik JSON zawiera:
-
-```text
-prepare_problem_seconds
-run_island_seconds
-gather_seconds
-report_seconds
-total_seconds
-migration_time_total_all_ranks
-migration_count_total_all_ranks
-migration_time_avg_per_migration
-migration_time_max_rank
-evolution_time_max_rank
+```bash
+./mpi_experiment_migration.sh \
+  --hostfile ./hosts-4-per-node.lxd \
+  --migration-strategy all \
+  --run-group-id migracja-002 \
+  --input inputs/mazowieckie_114.csv \
+  --seeds 32345 \
+  --population 1800 \
+  --generations 100 \
+  --python .venv/bin/python \
+  --fetch
 ```
 
-Oraz sekcję dywersyfikacji:
+Dla pełnej serii uśrednianej na wykresach należy przekazać do `--seeds` listę 10 niezależnych ziaren w formacie CSV.
 
-```text
-unique_best_routes
-mean_pairwise_edge_distance
-min_pairwise_edge_distance
-max_pairwise_edge_distance
+Agregacja wyników:
+
+```bash
+.venv/bin/python evaluate_scaling.py \
+  --summary results/runs.tsv \
+  --run-group-id skalowanie-005
+
+.venv/bin/python evaluate_migration.py \
+  --summary results/runs.tsv \
+  --run-group-id migracja-002
 ```
 
-Dzięki temu można porównać koszt lokalnych obliczeń z narzutem komunikacji MPI/LXD.
+Generowanie wykresów:
 
-## Instalacja jako pakiet lokalny
+```bash
+.venv/bin/python plot_scaling.py \
+  results/evaluate-scaling-skalowanie-005.json \
+  --sequential results/sequential-12345.json
+
+.venv/bin/python plot_migration.py \
+  results/evaluate-quality-migracja-002.json
+```
+
+## Instalacja
 
 Rekomendowany sposób instalacji w środowisku developerskim:
 
@@ -300,17 +366,15 @@ Dla środowiska developerskiego z narzędziami pomocniczymi:
 pip install -e ".[dev]"
 ```
 
-Uruchomienie z katalogu projektu:
+Uruchomienie pomocy CLI:
 
 ```bash
 .venv/bin/python main.py --help
 ```
 
-Alternatywnie, bez instalacji jako pakiet, trzeba uruchamiać program z katalogu głównego projektu, tak aby Python widział katalog `tsp_ga/` na `PYTHONPATH`.
+## Instalacja w kontenerach LXD
 
-### Instalacja w kontenerach LXD
-
-Na każdym kontenerze LXD wymagane są Python, OpenMPI i `mpi4py`:
+Na każdym kontenerze LXD wymagane są Python, OpenMPI, `mpi4py` i serwer SSH:
 
 ```bash
 sudo apt update
@@ -331,9 +395,7 @@ Jeżeli projekt jest tylko szybko testowany w kontenerze bez venv, można użyć
 python3 -m pip install --break-system-packages mpi4py
 ```
 
-Docelowo lepiej używać `venv` i `pip install -e .`, bo wtedy importy modułów `tsp_ga.*` są przewidywalne.
-
-### Limity zasobów LXD
+## Limity zasobów LXD
 
 Limity `1 vCPU` i `4GiB RAM` należy ustawić w konfiguracji LXD, najlepiej na profilu `mpi-worker`, którego używają kontenery MPI. Plik `lxd_profile_mpi_worker.yaml` zawiera dane cloud-init dla kontenerów i sam z siebie nie nakłada limitów CPU/RAM.
 
@@ -350,15 +412,10 @@ lxc profile set mpi-worker limits.cpu 1
 lxc profile set mpi-worker limits.memory 4GiB
 ```
 
-Weryfikacja profilu:
+Weryfikacja:
 
 ```bash
 lxc profile show mpi-worker
-```
-
-Weryfikacja konkretnego kontenera:
-
-```bash
 lxc config show <container-name> --expanded
 ```
 
@@ -373,139 +430,14 @@ mpiexec -n 4 .venv/bin/python main.py \
   --migration-strategy ring \
   --migration-interval 25 \
   --immigrants 2 \
-  --metadata-run-id mpi-local-004 \
-  --metadata-scenario-name local-4-ranks \
   --output results/mpi-local-004.json
-```
-
-Przykład z migracją `global-best`:
-
-```bash
-mpiexec -n 4 .venv/bin/python main.py \
-  --cities 50 \
-  --population-mode total \
-  --population 400 \
-  --generations 300 \
-  --migration-strategy global-best \
-  --migration-interval 50 \
-  --immigrants 1 \
-  --metadata-run-id mpi-local-004-global-best \
-  --metadata-scenario-name local-4-ranks-global-best \
-  --output results/mpi-local-004-global-best.json
-```
-
-## Uruchomienie na klastrze LXD
-
-Zakładany układ klastra:
-
-```text
-3 nody LXD
-4 kontenery systemowe LXD na każdym nodzie
-12 kontenerów / ranków MPI łącznie
-limits.cpu=1 na kontener
-limits.memory=4GiB na kontener
-```
-
-```bash
-mpiexec --hostfile hosts.lxd -n 12 .venv/bin/python main.py \
-  --cities 100 \
-  --population-mode total \
-  --population 1200 \
-  --generations 1000 \
-  --migration-strategy ring \
-  --migration-interval 50 \
-  --immigrants 2 \
-  --two-opt-attempts 5 \
-  --metadata-containers-per-node 4 \
-  --metadata-hostfile hosts.lxd \
-  --metadata-cpu-limit 1 \
-  --metadata-memory-limit 4GiB \
-  --metadata-code-version manual-v1 \
-  --metadata-run-id lxd-3nodes-4containers-001 \
-  --metadata-scenario-name 3nodes-4containers-per-node \
-  --output results/lxd-3nodes-4containers-001.json
-```
-
-Wariant `global-best` na klastrze LXD:
-
-```bash
-mpiexec --hostfile hosts.lxd -n 12 .venv/bin/python main.py \
-  --cities 100 \
-  --population-mode total \
-  --population 1200 \
-  --generations 1000 \
-  --migration-strategy global-best \
-  --migration-interval 100 \
-  --immigrants 1 \
-  --two-opt-attempts 5 \
-  --metadata-containers-per-node 4 \
-  --metadata-hostfile hosts.lxd \
-  --metadata-cpu-limit 1 \
-  --metadata-memory-limit 4GiB \
-  --metadata-code-version manual-v1 \
-  --metadata-run-id lxd-3nodes-4containers-global-best-001 \
-  --metadata-scenario-name 3nodes-4containers-global-best \
-  --output results/lxd-3nodes-4containers-global-best-001.json
-```
-
-Rekomendowane skrypty eksperymentalne dla tego układu:
-
-```bash
-./mpi_experiment_scaling.sh --fetch
-./mpi_experiment_migration.sh --hostfile ./hosts-4-per-node.lxd --fetch
-```
-
-Pierwszy skrypt testuje domyślnie pliki `hosts-1-per-node.lxd`, `hosts-2-per-node.lxd` i `hosts-4-per-node.lxd`. Liczba ranków jest liczona z liczby wpisów w wybranym pliku hostów. Drugi skrypt porównuje strategie migracji przy pełnym układzie `np=12`.
-
-## Parametry CLI
-
-| Parametr | Znaczenie |
-|---|---|
-| `--population-mode per-rank|total` | Interpretacja `--population` |
-| `--population` | Populacja per rank albo całkowity budżet populacji |
-| `--migration-strategy none|ring|global-best` | Strategia migracji między wyspami |
-| `--cities` | Liczba syntetycznie generowanych miast |
-| `--input` | Plik CSV z miastami |
-| `--generations` | Liczba generacji |
-| `--mutation` | Prawdopodobieństwo mutacji swap |
-| `--elite` | Liczba najlepszych osobników przenoszonych do kolejnej generacji |
-| `--tournament` | Rozmiar turnieju w selekcji turniejowej |
-| `--migration-interval` | Co ile generacji wykonywać migrację |
-| `--immigrants` | Ilu najlepszych osobników migruje do kolejnej wyspy |
-| `--two-opt-attempts` | Liczba losowych prób lokalnego ulepszenia trasy |
-| `--debug-routes` | Walidacja, czy trasy są poprawnymi permutacjami |
-| `--metadata-hostfile` | Metadane wyniku: hostfile MPI użyty przez `mpiexec --hostfile` |
-| `--metadata-cpu-limit` | Metadane wyniku: limit CPU ustawiony na kontenerach LXD |
-| `--metadata-memory-limit` | Metadane wyniku: limit pamięci ustawiony na kontenerach LXD |
-| `--metadata-code-version` | Metadane wyniku: wersja kodu/commit/tag |
-| `--output` | Wymagana ścieżka zapisu wyniku JSON |
-| `--metadata-run-id` | Metadane wyniku: identyfikator uruchomienia eksperymentu |
-| `--metadata-scenario-name` | Metadane wyniku: nazwa scenariusza eksperymentalnego |
-| `--metadata-containers-per-node` | Metadane wyniku: liczba kontenerów LXD na fizyczny node |
-
-## Miary do eksperymentów
-
-Dla pomiaru przyspieszenia używaj `--population-mode total` i porównuj uruchomienia MPI z różnymi plikami hostów:
-
-```bash
-./mpi_experiment_scaling.sh --hostfiles ./hosts-1-per-node.lxd,./hosts-2-per-node.lxd,./hosts-4-per-node.lxd --fetch
-```
-
-Następnie:
-
-```text
-S_ref(p) = elapsed_seconds dla hosts-1-per-node.lxd / elapsed_seconds dla badanego hostfile
 ```
 
 ## Uwagi projektowe
 
-- Program zawsze zapisuje pełny wynik do JSON przez wymagany parametr `--output`; stdout zawiera tylko krótkie podsumowanie.
-- Pomiar etapów wykonania jest wydzielony do `tsp_ga/timing.py` jako `StageTimer`, żeby `runner.py` nie powielał ręcznej logiki start/stop.
-- W raporcie JSON pole `ga_config_effective_rank0` oznacza efektywną konfigurację ranku 0. Pełny rozkład populacji między rankami jest zapisany w `work_budget.per_rank_populations`.
+- Program zawsze zapisuje pełny wynik do JSON przez wymagany parametr `--output`.
 - `models.py` nie importuje `mpi4py`, dzięki czemu modele i większość logiki GA można testować bez inicjalizacji MPI.
-- Migracja ma jawnie wybieraną strategię: `none`, `ring` albo `global-best`.
-- Wynik JSON zawiera metrykę dywersyfikacji najlepszych tras między wyspami, opartą o podobieństwo krawędzi TSP.
 - Operator `random_two_opt_improvement()` wykonuje losowe próby ulepszenia trasy i używa delta-cost O(1).
+- Dla wyboru elit i migrantów używane jest `heapq.nsmallest`, co ogranicza koszt względem pełnego sortowania.
 - `--debug-routes` warto włączać w testach i podczas rozwoju, ale wyłączać w dłuższych benchmarkach.
-- Wariant MPI nie używa natywnego schedulera LXD. LXD zapewnia kontenery, a MPI zapewnia dystrybucję pracy.
-```
+- Wariant MPI nie używa natywnego schedulera LXD do podziału pracy. LXD zapewnia kontenery, a MPI zapewnia dystrybucję obliczeń i komunikację między rankami.
